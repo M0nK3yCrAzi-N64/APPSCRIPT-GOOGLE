@@ -137,7 +137,98 @@ function obtenerClientes() {
   const sheet = ss.getSheetByName(HOJA_CLIENTES);
   if (!sheet || sheet.getLastRow() < 2) return [];
   const data = sheet.getDataRange().getValues();
-  return data.slice(1).map(r => ({clave: r[0] || '', nombre: r[1] || '', telefono: r[2] || '', email: r[3] || '', direccion: r[4] || '', estado: r[5] || 'ACTIVO'})).filter(c => c.clave);
+  const headers = data[0].map(h => String(h || '').trim().toUpperCase());
+  const idxFotoUrl = headers.indexOf('FOTOURL');
+  return data.slice(1).map(r => ({
+    clave: r[0] || '',
+    nombre: r[1] || '',
+    telefono: r[2] || '',
+    email: r[3] || '',
+    direccion: r[4] || '',
+    estado: r[5] || 'ACTIVO',
+    fotoUrl: idxFotoUrl >= 0 ? (r[idxFotoUrl] || '') : ''
+  })).filter(c => c.clave);
+}
+
+/* ------------------- FOTOS DE CLIENTES ------------------- */
+function _getOrCreateFolderByName_(parent, name) {
+  var folders = parent.getFoldersByName(name);
+  if (folders.hasNext()) return folders.next();
+  return parent.createFolder(name);
+}
+
+function _getClientesFotosFolder_() {
+  var root = DriveApp.getRootFolder();
+  return _getOrCreateFolderByName_(root, 'CLIENTES_FOTOS');
+}
+
+function _asegurarColumnasFotoClientes_(sheet) {
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var headersUpper = headers.map(function(h){ return String(h || '').trim().toUpperCase(); });
+  var idxFileId = headersUpper.indexOf('FOTOFILEID');
+  var idxUrl = headersUpper.indexOf('FOTOURL');
+  var lastCol = headers.length;
+  if (idxFileId < 0) {
+    sheet.getRange(1, lastCol + 1).setValue('FotoFileId');
+    idxFileId = lastCol;
+    lastCol++;
+  }
+  if (idxUrl < 0) {
+    sheet.getRange(1, lastCol + 1).setValue('FotoUrl');
+    idxUrl = lastCol;
+  }
+  return { idxFileId: idxFileId, idxUrl: idxUrl };
+}
+
+function subirFotoCliente(payload) {
+  try {
+    if (!payload || !payload.claveCliente || !payload.base64 || !payload.mimeType) {
+      throw new Error('Payload inválido: se requiere claveCliente, base64 y mimeType');
+    }
+    var clave = String(payload.claveCliente).trim().toUpperCase();
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(HOJA_CLIENTES);
+    if (!sheet) throw new Error('Hoja CLIENTES no encontrada');
+
+    // Ensure columns exist
+    var cols = _asegurarColumnasFotoClientes_(sheet);
+
+    // Find client row
+    var data = sheet.getDataRange().getValues();
+    var rowIdx = -1;
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][0] && String(data[i][0]).trim().toUpperCase() === clave) {
+        rowIdx = i + 1; // 1-based sheet row
+        break;
+      }
+    }
+    if (rowIdx < 0) throw new Error('Cliente no encontrado: ' + clave);
+
+    // Trash old photo if exists
+    var oldFileId = data[rowIdx - 1][cols.idxFileId] ? String(data[rowIdx - 1][cols.idxFileId]).trim() : '';
+    if (oldFileId) {
+      try { DriveApp.getFileById(oldFileId).setTrashed(true); } catch(e) { /* ignorar */ }
+    }
+
+    // Save new photo in Drive
+    var folder = _getClientesFotosFolder_();
+    var ext = payload.mimeType.split('/')[1] || 'jpg';
+    var fileName = clave + '_' + new Date().getTime() + '.' + ext;
+    var bytes = Utilities.base64Decode(payload.base64);
+    var blob = Utilities.newBlob(bytes, payload.mimeType, fileName);
+    var file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    var fileId = file.getId();
+    var fotoUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w1000';
+
+    // Update sheet
+    sheet.getRange(rowIdx, cols.idxFileId + 1).setValue(fileId);
+    sheet.getRange(rowIdx, cols.idxUrl + 1).setValue(fotoUrl);
+
+    return { ok: true, fileId: fileId, fotoUrl: fotoUrl };
+  } catch(err) {
+    return { ok: false, error: err.message };
+  }
 }
 
 function eliminarCliente(clave) {
