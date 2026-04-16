@@ -1,0 +1,2195 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+     /* Estilos Generales */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #E8F4F8; height: 100vh; overflow: hidden; }
+    .app-container { display: flex; height: 100vh; }
+
+    /* Sidebar */
+    .sidebar { width: 250px; background: #2E86AB; color: white; flex-shrink: 0; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
+    .sidebar-header { padding: 20px; background: #1C5F7B; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-header h1 { font-size: 1.2rem; font-weight: 600; text-align: center; }
+    .nav-menu { list-style: none; padding: 20px 0; }
+    .nav-item { margin: 5px 15px; }
+    .nav-link { display: flex; align-items: center; padding: 12px 15px; color: rgba(255,255,255,0.8); text-decoration: none; border-radius: 8px; transition: all 0.3s ease; cursor: pointer; font-size: 0.9rem; }
+    .nav-link:hover { background: rgba(255,255,255,0.15); color: white; transform: translateX(5px); }
+    .nav-link.active { background: #5DADE2; color: white; font-weight: 600; }
+    .nav-icon { margin-right: 10px; font-size: 1.1rem; width: 20px; text-align: center; }
+
+    /* Imagen Sidebar */
+    .image-container { width: 100%; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+    .auto-image { width: 100%; height: auto; }
+
+    /* Main Content */
+    .main-content { flex: 1; overflow-y: auto; background: #FAFBFC; }
+    .content-header { background: white; padding: 20px 30px; border-bottom: 1px solid #e9ecef; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .content-header h2 { color: #2E86AB; font-size: 1.5rem; font-weight: 600; }
+    .content-body { padding: 30px; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Cards & Forms */
+    .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.06); margin-bottom: 25px; overflow: hidden; border: 1px solid #E5F2F7; }
+    .card-header { padding: 20px; background: #F0F8FC; border-bottom: 1px solid #E5F2F7; font-weight: 600; color: #2E86AB; }
+    .card-body { padding: 25px; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
+    .form-group { display: flex; flex-direction: column; position: relative; }
+    .form-group label { margin-bottom: 8px; font-weight: 600; color: #2E86AB; font-size: 0.9rem; }
+    input, select, textarea { padding: 12px; border: 2px solid #E5F2F7; border-radius: 8px; font-size: 0.9rem; transition: all 0.3s ease; background: white; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #5DADE2; box-shadow: 0 0 0 3px rgba(93, 173, 226, 0.1); }
+
+    /* Autocomplete */
+    .autocomplete-container { position: relative; }
+    .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #5DADE2; border-top: none; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; }
+    .autocomplete-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #E5F2F7; transition: background 0.2s ease; }
+    .autocomplete-item:hover { background: #F0F8FC; }
+    .autocomplete-code { font-weight: 600; color: #2E86AB; }
+    .autocomplete-name { color: #6c757d; font-size: 0.85rem; margin-top: 2px; }
+
+    /* Buttons */
+    .btn { padding: 12px 20px; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .btn-primary { background: #5DADE2; color: white; }
+    .btn-success { background: #28a745; color: white; }
+    .btn-danger { background: #dc3545; color: white; }
+    .btn-warning { background: #ffc107; color: #212529; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-info { background: #17a2b8; color: white; }
+
+    /* Tables */
+    .table-container { overflow-x: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #E5F2F7; }
+    table { width: 100%; border-collapse: collapse; background: white; }
+    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #E5F2F7; }
+    th { background: #F0F8FC; font-weight: 600; color: #2E86AB; font-size: 0.9rem; }
+    tr:hover { background: #F8FBFD; }
+
+    /* Status Colors */
+    .status-normal { background: #d4edda; color: #155724; }
+    .status-low { background: #fff3cd; color: #856404; }
+    .status-zero { background: #f8d7da; color: #721c24; }
+    .text-success { color: #28a745; font-weight: 600; }
+    .text-danger { color: #dc3545; font-weight: 600; }
+    .text-warning { color: #ffc107; font-weight: 600; }
+
+    /* Messages */
+    .message { padding: 12px 15px; border-radius: 8px; margin: 15px 0; font-weight: 500; }
+    .message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .message.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .message.warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+    .message.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    .loading { display: none; text-align: center; padding: 20px; color: #5DADE2; font-style: italic; }
+
+    /* Dashboard & Badges */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+    .stat-card { background: white; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.06); border-left: 4px solid #5DADE2; border: 1px solid #E5F2F7; }
+    .stat-value { font-size: 2rem; font-weight: 700; color: #2E86AB; margin-bottom: 5px; }
+    .stat-label { color: #6c757d; font-size: 0.9rem; font-weight: 500; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; }
+    .badge-ok { background: #d4edda; color: #155724; }
+    .badge-pend { background: #fff3cd; color: #856404; }
+    .badge-kit { background: #ffe6b3; color: #8a5d00; }
+    .badge-act { background: #39befff5; color: #fff; font-weight: 600; }
+    .badge-vencehoy { background: #fff3cd; color: #856404; font-weight: 600; }
+    .badge-vencida { background: #dc3545; color: white; animation: pulso 2s infinite; }
+    .faltante-neg { color: #dc3545; font-weight: 700; }
+
+    @keyframes pulso {
+      0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+      70% { box-shadow: 0 0 0 6px rgba(220, 53, 69, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+
+    /* DataTable Child Row */
+    td.details-control { cursor: pointer; text-align: center; color: #2E86AB; font-weight: bold; font-size: 1.2rem; }
+    tr.shown td.details-control { color: #dc3545; }
+
+    /* ESTILOS PARA EL MODAL DE PARÁMETROS */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 2000;
+      backdrop-filter: blur(2px); animation: fadeIn 0.2s;
+    }
+    .modal-dialog {
+      position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      width: 90%; max-width: 900px; z-index: 2001; animation: slideUp 0.3s;
+    }
+    @keyframes slideUp { from { transform: translate(-50%, -40%); opacity: 0; } to { transform: translate(-50%, -50%); opacity: 1; } }
+
+    .param-menu-btn {
+      width: 100%; text-align: left; padding: 12px; border-radius: 8px;
+      background: white; border: 1px solid #E5F2F7; color: #2E86AB; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; margin-bottom: 8px;
+    }
+    .param-menu-btn:hover, .param-menu-btn.active {
+      background: #F0F8FC; border-left: 4px solid #5DADE2;
+    }
+    .form-control {
+      width: 100%; padding: 10px; border: 2px solid #E5F2F7; border-radius: 6px;
+      font-size: 0.9rem; margin-top: 4px;
+    }
+    .form-label { font-size: 0.85rem; font-weight: 600; color: #6c757d; }
+
+    @media (max-width: 768px) {
+      .sidebar { width: 100%; height: auto; position: fixed; top: 0; left: -100%; z-index: 1000; transition: left 0.3s ease; }
+      .sidebar.open { left: 0; }
+      .main-content { width: 100%; }
+      .form-grid { grid-template-columns: 1fr; }
+      .actions { flex-direction: column; }
+    }
+  </style>
+
+  <!-- DataTables -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+</head>
+
+<body onload="initializeApp()">
+  <div class="app-container">
+    <nav class="sidebar">
+      <div class="sidebar-header"><h1>SISTEMA INVENTARIO </h1></div>
+
+      <div class="image-container">
+        <img
+          id="sidebarLogo"
+          src="https://lh3.googleusercontent.com/d/1e9ki2xO6zgPsnCYEijV0VqI8szbCxIlY"
+          alt="Logo"
+          class="auto-image espejo"
+        >
+      </div>
+
+      <ul class="nav-menu">
+        <li class="nav-item"><a class="nav-link active" onclick="showTab('dashboard', event)"><span class="nav-icon">📊</span>Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" onclick="showTab('clientes', event)"><span class="nav-icon">👤</span>Clientes</a></li>
+        <li class="nav-item"><a class="nav-link" onclick="showTab('productos', event)"><span class="nav-icon">📦</span>Nuevo producto</a></li>
+        <li class="nav-item"><a class="nav-link" onclick="showTab('kits', event)"><span class="nav-icon">🧩</span>Kits</a></li>
+        <li class="nav-item"><a class="nav-link" onclick="showTab('checkRentas', event)"><span class="nav-icon">✅</span>Check de Rentas</a></li>
+        <li class="nav-item"><a class="nav-link" onclick="showTab('movimientos', event)"><span class="nav-icon">📋</span>Movimientos</a></li>
+        <li class="nav-item"><a class="nav-link" onclick="showTab('inventario', event)"><span class="nav-icon">📊</span>Inventario</a></li>
+        <li class="nav-item"><a class="nav-link" onclick="showTab('reportes', event)"><span class="nav-icon">📈</span>Reportes</a></li>
+        <li class="nav-item"><a class="nav-link" onclick="showTab('caja', event)"><span class="nav-icon">🧾</span>Caja Registradora</a></li>
+        <li class="nav-item"><a class="nav-link" onclick="abrirParametrosModal()"><span class="nav-icon">🏢</span> Parámetros</a></li>
+        <li class="nav-item"><a class="nav-link" onclick="showTab('configuracion', event)"><span class="nav-icon">⚙️</span>Configuración</a></li>
+      </ul>
+    </nav>
+
+    <div class="main-content">
+      <!-- Dashboard -->
+      <div id="dashboard" class="tab-content active">
+        <div class="content-header"><h2>Dashboard General</h2></div>
+        <div class="content-body">
+          <div class="stats-grid" id="statsGrid"></div>
+          <div class="card">
+            <div class="card-header">Alertas de Stock</div>
+            <div class="card-body">
+              <div class="actions">
+                <button class="btn btn-primary" onclick="loadDashboard()">Actualizar Dashboard</button>
+                <button class="btn btn-warning" onclick="showStockAlerts()">Ver Alertas de Stock</button>
+              </div>
+              <div id="alertsContainer"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clientes -->
+      <div id="clientes" class="tab-content">
+        <div class="content-header"><h2>Gestión de Clientes</h2></div>
+        <div class="content-body">
+          <div class="card">
+            <div class="card-header">Registrar Cliente</div>
+            <div class="card-body">
+              <form id="formCliente" onsubmit="registrarCliente(event)">
+                <div class="form-grid">
+                  <div class="form-group"><label>Clave *</label><input id="cliClave" required readonly placeholder="Se autogenerará" style="background:#f5f5f5;"></div>
+                  <div class="form-group"><label>Nombre *</label><input id="cliNombre" required></div>
+                  <div class="form-group"><label>Teléfono</label><input id="cliTelefono"></div>
+                  <div class="form-group"><label>Email</label><input id="cliEmail" type="email"></div>
+                  <div class="form-group"><label>Dirección</label><textarea id="cliDireccion" rows="2"></textarea></div>
+                </div>
+                <div class="actions">
+                  <button class="btn btn-success" type="submit" id="btnClienteGuardar">💾 Guardar</button>
+                  <button class="btn btn-secondary" type="button" onclick="limpiarFormCliente()">🗑️ Limpiar</button>
+                </div>
+              </form>
+              <div id="msgCliente"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">Listado de Clientes <span id="contadorClientes" style="font-weight: normal; font-size: 0.85rem; margin-left: 10px; color: #6c757d;"></span></div>
+            <div class="card-body">
+              <div class="form-grid" style="margin-bottom: 20px;">
+                <div class="form-group"><label for="filtroClienteTexto">🔍 Buscar por clave, nombre, teléfono o email</label><input id="filtroClienteTexto" type="text" placeholder="Escriba para filtrar..." onkeyup="filtrarClientesEnTiempoReal()"></div>
+                <div class="form-group">
+                  <label for="filtroClienteEstado">Filtrar por estado</label>
+                  <select id="filtroClienteEstado" onchange="filtrarClientesEnTiempoReal()">
+                    <option value="">Todos</option><option value="ACTIVO" selected>Activos</option><option value="INACTIVO">Inactivos</option>
+                  </select>
+                </div>
+              </div>
+              <div class="actions">
+                <button class="btn btn-primary" onclick="mostrarClientes()">🔄 Actualizar</button>
+                <button class="btn btn-secondary" onclick="limpiarFiltrosClientes()">🗑️ Limpiar Filtros</button>
+                <button class="btn btn-success" onclick="exportarClientes()">📥 Exportar CSV</button>
+              </div>
+              <div class="table-container"><div id="tablaClientes"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Productos -->
+      <div id="productos" class="tab-content">
+        <div class="content-header"><h2>Gestión de Productos</h2></div>
+        <div class="content-body">
+          <div class="card">
+            <div class="card-header">Registrar Nuevo Producto</div>
+            <div class="card-body">
+              <form id="formProducto" onsubmit="registrarProducto(event)">
+                <div class="form-grid">
+                  <div class="form-group"><label for="codigoProd">Código *</label><input id="codigoProd" type="text" placeholder="Código único del producto" required></div>
+                  <div class="form-group"><label for="nombreProd">Nombre *</label><input id="nombreProd" type="text" placeholder="Nombre del producto" required></div>
+                  <div class="form-group"><label for="unidadProd">Unidad de Medida</label><select id="unidadProd" required></select></div>
+                  <div class="form-group"><label for="grupoProd">Grupo</label><select id="grupoProd" required></select></div>
+                  <div class="form-group"><label for="stockMinProd">Stock Mínimo</label><input id="stockMinProd" type="number" min="0" value="0"></div>
+                </div>
+                <div class="actions">
+                  <button type="submit" class="btn btn-success">Registrar Producto</button>
+                  <button type="button" class="btn btn-secondary" onclick="limpiarFormProducto()">Limpiar</button>
+                </div>
+              </form>
+              <div id="msgProd"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kits -->
+      <div id="kits" class="tab-content">
+        <div class="content-header"><h2>Gestión de Kits</h2></div>
+        <div class="content-body">
+          <div class="card">
+            <div class="card-header">Registrar / Editar Kit</div>
+            <div class="card-body">
+              <form id="formKit" onsubmit="guardarKit(event)">
+                <div class="form-grid">
+                  <div class="form-group"><label>Código *</label><input id="kitCodigo" required readonly style="background:#f5f5f5;"></div>
+                  <div class="form-group"><label>Nombre *</label><input id="kitNombre" required></div>
+                  <div class="form-group"><label>Estado</label><select id="kitEstado"><option value="ACTIVO">ACTIVO</option><option value="INACTIVO">INACTIVO</option></select></div>
+                  <div class="form-group" style="grid-column: 1 / -1;"><label>Descripción</label><textarea id="kitDescripcion" rows="2" placeholder="Opcional"></textarea></div>
+                </div>
+                <div class="actions">
+                  <button type="button" class="btn btn-info" onclick="agregarComponenteKit()">Agregar componente</button>
+                  <button type="submit" class="btn btn-success">Guardar Kit</button>
+                  <button type="button" class="btn btn-secondary" onclick="limpiarFormKit()">Limpiar</button>
+                  <button type="button" class="btn btn-warning" onclick="exportarKits()">Exportar Kits CSV</button>
+                </div>
+                <div class="table-container"><div id="tablaComponentesKit"></div></div>
+                <div id="msgKit"></div>
+              </form>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">Listado de Kits</div>
+            <div class="card-body">
+              <div class="form-grid" style="margin-bottom: 20px;">
+                <div class="form-group"><label for="filtroKitTexto">🔍 Buscar por código o nombre</label><input id="filtroKitTexto" type="text" placeholder="Escriba para filtrar..." onkeyup="filtrarKits()"></div>
+                <div class="form-group"><label for="filtroKitEstado">Estado</label><select id="filtroKitEstado" onchange="filtrarKits()"><option value="">Todos</option><option value="ACTIVO" selected>Activos</option><option value="INACTIVO">Inactivos</option></select></div>
+              </div>
+              <div class="actions"><button class="btn btn-primary" onclick="cargarKits()">🔄 Actualizar</button></div>
+              <div class="table-container"><div id="tablaKits"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Movimientos -->
+      <div id="movimientos" class="tab-content">
+        <div class="content-header"><h2>Registro de Movimientos</h2></div>
+        <div class="content-body">
+          <div class="card">
+            <div class="card-header">Nuevo Movimiento (lote)</div>
+            <div class="card-body">
+              <form id="formMovimiento" onsubmit="addMovimientoDraft(event)">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="codigoMov">Código del Producto *</label>
+                    <div class="autocomplete-container">
+                      <input id="codigoMov" type="text" placeholder="Código del producto" required onkeyup="buscarProductoAutocompletado()" onblur="ocultarAutocompletado()" onfocus="mostrarAutocompletado()">
+                      <div id="autocompleteDropdown" class="autocomplete-dropdown"></div>
+                    </div>
+                  </div>
+                  <div class="form-group"><label for="fechaMov">Fecha *</label><input id="fechaMov" type="date" required></div>
+                  <div class="form-group">
+                    <label for="tipoMov">Tipo de Movimiento *</label>
+                    <select id="tipoMov" required>
+                      <option value="INGRESO">Ingreso</option><option value="SALIDA">Salida</option><option value="AJUSTE_POSITIVO">Ajuste Positivo</option><option value="AJUSTE_NEGATIVO">Ajuste Negativo</option><option value="AJUSTE">Ajuste Libre</option><option value="ENTRADA_X_MANTENIMIENTO">Entrada x Mantenimiento</option><option value="SALIDA_X_MANTENIMIENTO">Salida x Mantenimiento</option><option value="SALIDA_X_SCRAP">Salida x Scrap</option><option value="ENTRADA_X_COMPRA_PROVEEDOR">Entrada x Compra Proveedor</option><option value="DEVOLUCION_X_COMPRA_PROVEEDOR">Devolución x Compra Proveedor</option><option value="SALIDA_X_VENTA">Salida x Venta</option><option value="DEVOLUCION_X_VENTA">Devolución x Venta</option><option value="ENTRADA_X_MANTENIMIENTO_CLIENTE">Entrada x Mantenimiento Cliente</option><option value="SALIDA_X_MANTENIMIENTO_CLIENTE">Salida x Mantenimiento Cliente</option><option value="SALIDA_X_RENTA">Salida x Renta</option><option value="ENTRADA_X_RENTA">Entrada x Renta</option><option value="ENTRADA_X_DEVOLUCION">Entrada x Devolución</option>
+                    </select>
+                  </div>
+                  <div class="form-group"><label for="cantMov">Cantidad *</label><input id="cantMov" type="number" min="0.01" step="0.01" placeholder="Cantidad" required></div>
+                  <div class="form-group"><label for="obsMov">Observaciones</label><textarea id="obsMov" placeholder="Observaciones opcionales" rows="3"></textarea></div>
+                </div>
+                <div class="actions">
+                  <button type="submit" class="btn btn-info">Agregar al lote</button>
+                  <button type="button" class="btn btn-success" id="btnGuardarLote" onclick="guardarLoteMovimientos()">Guardar lote</button>
+                  <button type="button" class="btn btn-secondary" onclick="limpiarFormMovimiento()">Limpiar</button>
+                </div>
+              </form>
+              <div id="msgMov"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">Lote de movimientos (borradores)</div>
+            <div class="card-body"><div id="borradoresTable"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inventario -->
+      <div id="inventario" class="tab-content">
+        <div class="content-header"><h2>Control de Inventario</h2></div>
+        <div class="content-body">
+          <div class="card">
+            <div class="card-header">Stock Actual</div>
+            <div class="card-body">
+              <div class="actions">
+                <button class="btn btn-primary" onclick="mostrarStock()">Actualizar Stock</button>
+                <button class="btn btn-warning" onclick="mostrarAlertas()">Solo Alertas</button>
+              </div>
+              <div id="loading" class="loading">Cargando inventario...</div>
+              <div class="table-container"><div id="stockTable"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reportes -->
+      <div id="reportes" class="tab-content">
+        <div class="content-header"><h2>Reportes y Análisis</h2></div>
+        <div class="content-body">
+          <div class="card">
+            <div class="card-header">Historial de Movimientos</div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="form-group"><label for="fechaDesde">Fecha Desde</label><input id="fechaDesde" type="date" required></div>
+                <div class="form-group"><label for="fechaHasta">Fecha Hasta</label><input id="fechaHasta" type="date" required></div>
+                <div class="form-group">
+                  <label for="filtroTipo">Filtrar por Tipo</label>
+                  <select id="filtroTipo">
+                    <option value="">Todos</option>
+                    <option value="INGRESO">Ingreso</option><option value="SALIDA">Salida</option><option value="AJUSTE_POSITIVO">Ajuste Positivo</option><option value="AJUSTE_NEGATIVO">Ajuste Negativo</option><option value="AJUSTE">Ajuste Libre</option><option value="ENTRADA_X_MANTENIMIENTO">Entrada x Mantenimiento</option><option value="SALIDA_X_MANTENIMIENTO">Salida x Mantenimiento</option><option value="SALIDA_X_SCRAP">Salida x Scrap</option><option value="ENTRADA_X_COMPRA_PROVEEDOR">Entrada x Compra Proveedor</option><option value="DEVOLUCION_X_COMPRA_PROVEEDOR">Devolución x Compra Proveedor</option><option value="SALIDA_X_VENTA">Salida x Venta</option><option value="DEVOLUCION_X_VENTA">Devolución x Venta</option><option value="ENTRADA_X_MANTENIMIENTO_CLIENTE">Entrada x Mantenimiento Cliente</option><option value="SALIDA_X_MANTENIMIENTO_CLIENTE">Salida x Mantenimiento Cliente</option><option value="SALIDA_X_RENTA">Salida x Renta</option><option value="ENTRADA_X_RENTA">Entrada x Renta</option><option value="ENTRADA_X_DEVOLUCION">Entrada x Devolución</option>
+                  </select>
+                </div>
+              </div>
+              <div class="actions">
+                <button class="btn btn-primary" onclick="mostrarHistorial()">Generar Reporte</button>
+              </div>
+              <div class="table-container"><div id="historialTable"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Caja Registradora -->
+      <div id="caja" class="tab-content">
+        <div class="content-header"><h2>Caja Registradora</h2></div>
+        <div class="content-body">
+          <div class="card">
+            <div class="card-header">Registro de Renta / Venta</div>
+            <div class="card-body">
+              <form id="formCaja" onsubmit="guardarCaja(event)">
+                <div class="form-grid">
+                  <div class="form-group"><label>IDREGISTRO</label><input id="cajaId" readonly style="background:#f5f5f5;"></div>
+                  <div class="form-group"><label>Cliente *</label><select id="cajaCliente" required></select></div>
+                  <div class="form-group"><label>Agente</label><input id="cajaAgente" type="text"></div>
+                  <div class="form-group"><label>Obra</label><input id="cajaObra" type="text"></div>
+                  <div class="form-group"><label>Remisión</label><input id="cajaRemision" type="text"></div>
+                  <div class="form-group">
+                    <label>Tipo *</label>
+                    <select id="cajaTipo" required onchange="refrescarCamposCaja()">
+                      <option value="SALIDA_X_RENTA">SALIDA_X_RENTA</option>
+                      <option value="SALIDA_X_VENTA">SALIDA_X_VENTA</option>
+                    </select>
+                  </div>
+                  <div class="form-group"><label>Fecha Captura</label><input id="cajaFecha" type="date" readonly style="background:#f5f5f5;"></div>
+                </div>
+                <div class="actions">
+                  <button type="button" class="btn btn-info" onclick="addProductoCaja()">Agregar producto</button>
+                  <button type="button" class="btn btn-warning" onclick="addKitCaja()">Agregar kit</button>
+                  <button type="submit" class="btn btn-success" id="btnCajaGuardar">Guardar Caja</button>
+                  <button type="button" class="btn btn-secondary" onclick="limpiarFormCaja()">Limpiar</button>
+                </div>
+                <div class="table-container" style="margin-top:15px;"><div id="cajaProductosTable"></div></div>
+
+                <!-- Totales -->
+                <div class="card" style="margin-top:15px;">
+                  <div class="card-header">Totales</div>
+                  <div class="card-body">
+                    <div class="form-grid">
+                      <div class="form-group"><label>SUB TOTAL</label><input id="ventaSubTotal" readonly style="background:#f5f5f5;"></div>
+                      <div class="form-group">
+  <label style="color:#dc3545; font-weight:700;">DESCUENTO</label>
+  <input id="ventaDescuentoTotal" readonly style="background:#f5f5f5; color:#dc3545; font-weight:700;">
+</div>
+                      <div class="form-group"><label>IVA %</label><input id="ventaIvaPct" type="number" min="0" step="0.01" value="0" oninput="recalcularTotalesCaja()"></div>
+                      <div class="form-group"><label>IVA</label><input id="ventaIvaMonto" readonly style="background:#f5f5f5;"></div>
+                      <div class="form-group">
+  <label style="color:#28a745; font-weight:800;">TOTAL</label>
+  <input id="ventaTotal" readonly style="background:#f5f5f5; color:#28a745; font-weight:800;">
+</div>
+                    </div>
+                  </div>
+                </div>
+              </form>
+
+              <div id="msgCaja"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Check de Rentas -->
+      <div id="checkRentas" class="tab-content">
+        <div class="content-header"><h2>Check de Rentas</h2></div>
+        <div class="content-body">
+          <div class="card">
+            <div class="card-header">Buscar y listar rentas</div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="form-group"><label>Buscar por ID</label><input id="checkBuscarId" type="text" placeholder="Ej. RENT01"></div>
+                <div class="form-group">
+                  <label>Filtrar por estado</label>
+                  <select id="filtroEstadoRenta" onchange="listarRentas()">
+                    <option value="">Todas</option>
+                    <option value="ACTIVO" selected>Activas (En tiempo)</option>
+                    <option value="VENCE_HOY">Vence Hoy</option>
+                    <option value="COMPLETA">Completas</option>
+                    <option value="VENCIDA">Vencidas</option>
+                  </select>
+                </div>
+              </div>
+              <div class="actions">
+                <button class="btn btn-primary" onclick="listarRentas()">🔄 Actualizar lista</button>
+                <button class="btn btn-info" onclick="cargarRentaPorId()">Cargar por ID</button>
+              </div>
+              <div id="msgCheck"></div>
+              <div class="table-container" style="margin-top: 15px;"><div id="tablaRentas"></div></div>
+            </div>
+          </div>
+          <div class="card" id="panelRenta" style="display:none;">
+            <div class="card-header">Detalle de renta</div>
+            <div class="card-body">
+              <div id="resumenRenta"></div>
+              <div class="table-container" style="margin-top:15px;"><div id="tablaRentaDetalle"></div></div>
+              <div style="margin-top:15px;"><label>Comentario general</label><textarea id="checkComentario" rows="2" style="width:100%;"></textarea></div>
+              <div class="form-grid" style="margin-top:15px;">
+                <div class="form-group"><label>Entregó</label><input id="checkEntrego" type="text" placeholder="Nombre"></div>
+                <div class="form-group"><label>Recibió</label><input id="checkRecibio" type="text" placeholder="Nombre"></div>
+              </div>
+              <div class="actions">
+                <button class="btn btn-success" onclick="guardarCheckRenta(event)">Guardar check</button>
+                <button class="btn btn-warning" onclick="imprimirRentaFormato()">🖨️ Imprimir Formato</button>
+                <button class="btn btn-secondary" onclick="cancelarCheck()">Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Configuración -->
+      <div id="configuracion" class="tab-content">
+        <div class="content-header"><h2>Configuración del Sistema</h2></div>
+        <div class="content-body">
+          <div class="card">
+            <div class="card-header">Herramientas de Administración</div>
+            <div class="card-body">
+              <div class="actions">
+                <button class="btn btn-info" onclick="validarIntegridad()">Validar Integridad</button>
+                <button class="btn btn-success" onclick="inicializarSistema()">Inicializar Sistema</button>
+              </div>
+              <div id="configResults" style="margin-top:15px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL PARÁMETROS -->
+  <div id="paramModal" style="display:none;">
+    <div class="modal-overlay" onclick="closeParametrosModal()"></div>
+    <div class="modal-dialog">
+      <div style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:15px 20px; background:#2E86AB; color:white;">
+          <div style="font-weight:700; font-size:1.1rem;">🏢 Parámetros de la Empresa</div>
+          <button onclick="closeParametrosModal()" style="background:none; border:0; color:white; font-size:20px; cursor:pointer;">✖</button>
+        </div>
+
+        <div style="display:flex; min-height: 400px;">
+          <div style="width:220px; background:#FAFBFC; padding:20px; border-right:1px solid #eee;">
+            <button class="param-menu-btn active">Datos Generales</button>
+            <button class="param-menu-btn" style="opacity:0.6; cursor:not-allowed;">Configuración Fiscal</button>
+            <button class="param-menu-btn" style="opacity:0.6; cursor:not-allowed;">Logotipos</button>
+          </div>
+
+          <div style="flex:1; padding:25px;">
+            <form id="formParametros" onsubmit="guardarParametrosModal(event)">
+              <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:15px;">
+                <div style="grid-column: span 2;">
+                  <label class="form-label">Nombre / Razón Social</label>
+                  <input id="paramNombre" class="form-control" placeholder="Ej. Mi Empresa S.A. de C.V.">
+                </div>
+                <div><label class="form-label">R.F.C</label><input id="paramRFC" class="form-control"></div>
+                <div><label class="form-label">Régimen Fiscal</label><input id="paramRegimen" class="form-control"></div>
+                <div style="grid-column: span 2;">
+                  <label class="form-label">Dirección Fiscal</label>
+                  <input id="paramDireccion" class="form-control" placeholder="Calle y número">
+                </div>
+                <div><label class="form-label">Colonia</label><input id="paramColonia" class="form-control"></div>
+                <div><label class="form-label">Código Postal</label><input id="paramCP" class="form-control"></div>
+                <div><label class="form-label">Ciudad</label><input id="paramCiudad" class="form-control"></div>
+                <div><label class="form-label">Estado</label><input id="paramEstado" class="form-control"></div>
+                <div><label class="form-label">País</label><input id="paramPais" class="form-control"></div>
+                <div><label class="form-label">Teléfono</label><input id="paramTelefono" class="form-control"></div>
+                <div><label class="form-label">Email de contacto</label><input id="paramEmail" type="email" class="form-control"></div>
+                <div><label class="form-label">Página Web</label><input id="paramWeb" class="form-control"></div>
+
+                <div style="grid-column: span 2;">
+                  <label class="form-label">Logo (PNG/JPG)</label>
+                  <input id="paramLogoFile" type="file" accept="image/png,image/jpeg" class="form-control" onchange="onLogoSelected()">
+                  <div style="display:flex; gap:12px; align-items:center; margin-top:10px;">
+                    <img id="logoPreview" src="" style="width:120px; height:80px; object-fit:contain; border:1px solid #E5F2F7; border-radius:8px; background:#fff; display:none;">
+                    <button type="button" class="btn btn-info" onclick="subirLogoDesdeModal()">Subir logo</button>
+                    <button type="button" class="btn btn-secondary" onclick="limpiarLogoSeleccionado()">Quitar selección</button>
+                  </div>
+                  <div id="msgLogo" style="font-size:0.9rem; margin-top:8px;"></div>
+                </div>
+              </div>
+
+              <div style="margin-top:25px; padding-top:15px; border-top:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                <div id="msgParametros" style="font-size:0.9rem;"></div>
+                <div style="display:flex; gap:10px;">
+                  <button type="button" onclick="closeParametrosModal()" class="btn btn-secondary">Cancelar</button>
+                  <button type="submit" class="btn btn-success">Guardar Cambios</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showMessage(containerId, message, type) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.innerHTML = `<div class="message ${type}">${message}</div>`;
+      if (type === 'success') setTimeout(() => { container.innerHTML = ''; }, 5000);
+    }
+
+    let currentTab = 'dashboard';
+
+    // Vars
+    let todosLosClientes = [];
+    let clientesFiltrados = [];
+    let filtroClienteTimeout;
+    let editandoCliente = false;
+    let clientesCaja = [];
+    let componentesKit = [];
+    let editandoKit = false;
+    let kitsDisponibles = [];
+    let kitsMap = {};
+    let rentaCargada = null;
+    let lineasCheck = [];
+    let borradoresMov = [];
+    let autocompleteTimeout;
+    let productosCaja = [];
+    let guardandoCaja = false;
+
+    // Logo selección
+    let logoSeleccionado = null;
+
+    function initializeApp() {
+      cargarParametrosParaUI();
+
+      cargarClaveCliente();
+      loadListas();
+      loadDashboard();
+      cargarKits();
+      cargarKitCodigo();
+      cargarCajaInicial();
+      const inputFecha = document.getElementById("fechaMov");
+      if(inputFecha) inputFecha.valueAsDate = new Date();
+      setDefaultReportDates();
+      showTab('dashboard');
+    }
+
+    function cargarParametrosParaUI() {
+      google.script.run.withSuccessHandler(p => {
+        if (p && p.logoUrl) aplicarLogoEnUI(p.logoUrl);
+      }).obtenerParametros();
+    }
+
+    function aplicarLogoEnUI(logoUrl) {
+      const img = document.getElementById("sidebarLogo");
+      if (!img) return;
+      if (!logoUrl) return;
+
+      const finalUrl = logoUrl + (logoUrl.includes("?") ? "&" : "?") + "v=" + Date.now();
+
+      img.onerror = () => {
+        img.onerror = null;
+        img.src = "https://lh3.googleusercontent.com/d/1e9ki2xO6zgPsnCYEijV0VqI8szbCxIlY";
+      };
+
+      img.src = finalUrl;
+
+      const prev = document.getElementById("logoPreview");
+      if (prev && prev.style.display === "block") prev.src = finalUrl;
+    }
+
+    function setDefaultReportDates() {
+      const today = new Date();
+      const monthAgo = new Date();
+      monthAgo.setMonth(monthAgo.getMonth() - 1);
+      const fd = document.getElementById("fechaDesde");
+      const fh = document.getElementById("fechaHasta");
+      if(fd) fd.valueAsDate = monthAgo;
+      if(fh) fh.valueAsDate = today;
+    }
+
+    function showTab(tabName, evt) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+      const tabEl = document.getElementById(tabName);
+      if (tabEl) tabEl.classList.add('active');
+      const linkEl = evt ? evt.currentTarget || evt.target : null;
+      if (linkEl && linkEl.classList) linkEl.classList.add('active');
+
+      currentTab = tabName;
+      if(tabName === 'checkRentas') listarRentas();
+      if(tabName === 'clientes' && todosLosClientes.length === 0) mostrarClientes();
+      if(tabName === 'dashboard') loadDashboard();
+      if(tabName === 'kits') { if(!editandoKit) cargarKitCodigo(); cargarKits(); }
+      if(tabName === 'inventario') mostrarStock();
+      if(tabName === 'caja') cargarCajaInicial();
+    }
+
+    function loadListas() {
+      google.script.run.withSuccessHandler(data => {
+        const unidadSelect = document.getElementById("unidadProd");
+        const grupoSelect  = document.getElementById("grupoProd");
+        if (unidadSelect) unidadSelect.innerHTML = "";
+        if (grupoSelect)  grupoSelect.innerHTML  = "";
+        (data.unidades || []).forEach(u => unidadSelect && (unidadSelect.innerHTML += `<option value="${u}">${u}</option>`));
+        (data.grupos   || []).forEach(g => grupoSelect  && (grupoSelect.innerHTML  += `<option value="${g}">${g}</option>`));
+      }).obtenerListas();
+    }
+
+    function loadDashboard() {
+      google.script.run.withSuccessHandler(data => {
+        const statsGrid = document.getElementById('statsGrid');
+        if (!statsGrid) return;
+        statsGrid.innerHTML = `
+          <div class="stat-card"><div class="stat-value">${data.totalProductos}</div><div class="stat-label">Total Productos</div></div>
+          <div class="stat-card"><div class="stat-value">${data.totalMovimientos}</div><div class="stat-label">Total Movimientos</div></div>
+          <div class="stat-card"><div class="stat-value">${data.sinStock}</div><div class="stat-label">Sin Stock</div></div>
+          <div class="stat-card"><div class="stat-value">${data.stockBajo}</div><div class="stat-label">Stock Bajo</div></div>
+        `;
+      }).obtenerResumen();
+    }
+
+    function showStockAlerts() {
+      google.script.run.withSuccessHandler(data => {
+        const alertProducts = data.filter(p => p.cantidad <= 0 || (p.cantidad <= p.stockMin && p.stockMin > 0));
+        const container = document.getElementById('alertsContainer');
+        if (alertProducts.length === 0) { container.innerHTML = '<div class="message success">No hay productos con alertas de stock</div>'; return; }
+        let html = `<div class="message warning"><strong>${alertProducts.length} producto(s) requieren atención</strong></div><table><thead><tr><th>Código</th><th>Nombre</th><th>Stock Actual</th><th>Stock Mín.</th><th>Estado</th></tr></thead><tbody>`;
+        alertProducts.forEach(p => {
+          const estado = p.cantidad <= 0 ? 'Sin Stock' : 'Stock Bajo';
+          const statusClass = p.cantidad <= 0 ? 'status-zero' : 'status-low';
+          html += `<tr class="${statusClass}"><td>${p.codigo}</td><td>${p.nombre}</td><td>${p.cantidad}</td><td>${p.stockMin}</td><td>${estado}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+      }).obtenerStock();
+    }
+
+    /* ------------------- CLIENTES ------------------- */
+    function cargarClaveCliente() {
+      google.script.run.withSuccessHandler(clave => {
+        if (clave && document.getElementById('cliClave')) document.getElementById('cliClave').value = clave;
+      }).obtenerClaveCliente();
+    }
+
+    function registrarCliente(e) {
+      e.preventDefault();
+      const cliente = {
+        clave: cliClave.value.trim().toUpperCase(),
+        nombre: cliNombre.value.trim(),
+        telefono: cliTelefono.value.trim(),
+        email: cliEmail.value.trim(),
+        direccion: cliDireccion.value.trim()
+      };
+      if (!cliente.nombre) { showMessage('msgCliente', 'Nombre es obligatorio', 'error'); return; }
+      if (editandoCliente) {
+        google.script.run.withSuccessHandler(msg => {
+          const tipo = msg.includes('correctamente') ? 'success' : 'error';
+          showMessage('msgCliente', msg, tipo);
+          if (tipo === 'success') { limpiarFormCliente(); mostrarClientes(); }
+        }).withFailureHandler(err => showMessage('msgCliente', err, 'error')).actualizarCliente(cliente);
+      } else {
+        google.script.run.withSuccessHandler(msg => {
+          const tipo = msg.includes('correctamente') ? 'success' : 'error';
+          showMessage('msgCliente', msg, tipo);
+          if (tipo === 'success') { limpiarFormCliente(); cargarClaveCliente(); mostrarClientes(); }
+        }).withFailureHandler(err => showMessage('msgCliente', err, 'error')).registrarCliente(cliente);
+      }
+    }
+
+    function limpiarFormCliente() {
+      document.getElementById('formCliente').reset();
+      document.getElementById('msgCliente').innerHTML = '';
+      editandoCliente = false;
+      document.getElementById('btnClienteGuardar').textContent = '💾 Guardar';
+      document.getElementById('cliClave').readOnly = true;
+      document.getElementById('cliClave').style.background = '#f5f5f5';
+      cargarClaveCliente();
+    }
+
+    function mostrarClientes() {
+      google.script.run.withSuccessHandler(data => { todosLosClientes = data; filtrarClientesEnTiempoReal(); })
+        .withFailureHandler(err => showMessage('tablaClientes', 'Error al cargar clientes: ' + err, 'error'))
+        .obtenerClientes();
+    }
+
+    function filtrarClientesEnTiempoReal() {
+      clearTimeout(filtroClienteTimeout);
+      filtroClienteTimeout = setTimeout(() => {
+        const textoFiltro = document.getElementById('filtroClienteTexto').value.toLowerCase().trim();
+        const estadoFiltro = document.getElementById('filtroClienteEstado').value.toUpperCase();
+        clientesFiltrados = todosLosClientes.filter(c => {
+          const coincideTexto = !textoFiltro || c.clave.toLowerCase().includes(textoFiltro) || c.nombre.toLowerCase().includes(textoFiltro) || c.telefono.toLowerCase().includes(textoFiltro) || c.email.toLowerCase().includes(textoFiltro);
+          const coincideEstado = !estadoFiltro || c.estado.toUpperCase() === estadoFiltro;
+          return coincideTexto && coincideEstado;
+        });
+        renderizarTablaClientes(clientesFiltrados);
+      }, 300);
+    }
+
+    function renderizarTablaClientes(data) {
+      const container = document.getElementById('tablaClientes');
+      const contador = document.getElementById('contadorClientes');
+      if (contador) contador.textContent = `(${data.length} ${data.length === 1 ? 'cliente' : 'clientes'})`;
+      if (data.length === 0) { container.innerHTML = '<div class="message warning">No se encontraron clientes con los filtros aplicados</div>'; return; }
+      let html = `<table><thead><tr><th>Clave</th><th>Nombre</th><th>Teléfono</th><th>Email</th><th>Dirección</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>`;
+      data.forEach(c => {
+        const estadoBadge = c.estado === 'ACTIVO'
+          ? '<span style="background:#d4edda; color:#155724; padding:4px 8px; border-radius:4px; font-size:0.8rem;">✓ Activo</span>'
+          : '<span style="background:#f8d7da; color:#721c24; padding:4px 8px; border-radius:4px; font-size:0.8rem;">✗ Inactivo</span>';
+
+        html += `<tr><td><strong>${c.clave}</strong></td><td>${c.nombre}</td><td>${c.telefono || '-'}</td><td>${c.email || '-'}</td><td>${c.direccion || '-'}</td><td>${estadoBadge}</td>
+          <td style="white-space: nowrap;">
+            <button class="btn btn-info" onclick="verDetalleCliente('${c.clave}')" title="Ver detalle" style="padding:8px 12px; font-size:0.8rem;">👁️</button>
+            <button class="btn btn-warning" onclick="editarCliente('${c.clave}')" title="Editar" style="padding:8px 12px; font-size:0.8rem;">✏️</button>
+            ${c.estado === 'ACTIVO'
+              ? `<button class="btn btn-danger" onclick="confirmarBajaCliente('${c.clave}')" title="Dar de baja" style="padding:8px 12px; font-size:0.8rem;">🗑️</button>`
+              : `<button class="btn btn-success" onclick="reactivarCliente('${c.clave}')" title="Reactivar" style="padding:8px 12px; font-size:0.8rem;">✓</button>`
+            }
+          </td></tr>`;
+      });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    function limpiarFiltrosClientes() {
+      document.getElementById('filtroClienteTexto').value = '';
+      document.getElementById('filtroClienteEstado').value = 'ACTIVO';
+      filtrarClientesEnTiempoReal();
+    }
+
+    function exportarClientes() {
+      if (clientesFiltrados.length === 0) { alert('No hay clientes para exportar'); return; }
+      let csv = '\uFEFF';
+      csv += 'Clave,Nombre,Teléfono,Email,Dirección,Estado\n';
+      clientesFiltrados.forEach(c => { csv += `"${c.clave}","${c.nombre}","${c.telefono}","${c.email}","${c.direccion}","${c.estado}"\n`; });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
+      a.download = `Clientes_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
+    }
+
+    function verDetalleCliente(clave) {
+      const cliente = todosLosClientes.find(c => c.clave === clave);
+      if (!cliente) { alert('Cliente no encontrado'); return; }
+      const detalle = `━━━━━━━━━━━━━━━━━━━━━━━━\n📋 DETALLE DEL CLIENTE\n━━━━━━━  ━━━━━━━━━━━━━━━━\n\n🔑 Clave: ${cliente.clave}\n👤 Nombre: ${cliente.nombre}\n📞 Teléfono: ${cliente.telefono || 'No registrado'}\n📧 Email: ${cliente.email || 'No registrado'}\n📍 Dirección: ${cliente.direccion || 'No registrada'}\n⚡ Estado: ${cliente.estado}\n\n━━━━━━━━━━━━━━━━━━━━━━━━`;
+      alert(detalle);
+    }
+
+    function editarCliente(clave) {
+      const cliente = todosLosClientes.find(c => c.clave === clave);
+      if (!cliente) return;
+      editandoCliente = true;
+      document.getElementById('cliClave').value = cliente.clave;
+      document.getElementById('cliNombre').value = cliente.nombre;
+      document.getElementById('cliTelefono').value = cliente.telefono || '';
+      document.getElementById('cliEmail').value = cliente.email || '';
+      document.getElementById('cliDireccion').value = cliente.direccion || '';
+      document.getElementById('btnClienteGuardar').textContent = 'Actualizar';
+      showMessage('msgCliente', `Editando cliente ${cliente.clave}`, 'info');
+    }
+
+    function confirmarBajaCliente(clave) {
+      if (confirm(`¿Desea dar de BAJA al cliente ${clave}?`)) {
+        google.script.run.withSuccessHandler(msg => { alert(msg); mostrarClientes(); }).eliminarCliente(clave);
+      }
+    }
+
+    function reactivarCliente(clave) {
+      if (confirm(`¿Desea REACTIVAR al cliente ${clave}?`)) {
+        google.script.run.withSuccessHandler(msg => { alert(msg); mostrarClientes(); }).reactivarCliente(clave);
+      }
+    }
+
+    /* ------------------- PRODUCTOS ------------------- */
+    function registrarProducto(event) {
+      event.preventDefault();
+      const producto = {
+        codigo: document.getElementById("codigoProd").value.trim().toUpperCase(),
+        nombre: document.getElementById("nombreProd").value.trim(),
+        unidad: document.getElementById("unidadProd").value,
+        grupo: document.getElementById("grupoProd").value,
+        stockMin: parseInt(document.getElementById("stockMinProd").value) || 0
+      };
+      if (!producto.codigo || !producto.nombre) { showMessage('msgProd', 'Código y nombre son campos obligatorios', 'error'); return; }
+      google.script.run.withSuccessHandler(mensaje => {
+        showMessage('msgProd', mensaje, mensaje.includes('correctamente') ? 'success' : 'error');
+        if (mensaje.includes('correctamente')) { document.getElementById('formProducto').reset(); document.getElementById("stockMinProd").value = "0"; }
+      }).withFailureHandler(error => showMessage('msgProd', 'Error: ' + error, 'error')).registrarProducto(producto);
+    }
+    function limpiarFormProducto() { document.getElementById('formProducto').reset(); document.getElementById("stockMinProd").value = "0"; document.getElementById('msgProd').innerHTML = ''; }
+
+    /* ------------------- KITS ------------------- */
+    function cargarKitCodigo() {
+      google.script.run.withSuccessHandler(c => { if (!editandoKit && c) document.getElementById('kitCodigo').value = c; }).obtenerCodigoKit();
+    }
+    function agregarComponenteKit() { componentesKit.push({ codigo: '', cantidad: '', nombre: '' }); renderTablaComponentesKit(); }
+    function updateComponenteKit(idx, field, value) { componentesKit[idx][field] = value; }
+    function removeComponenteKit(idx) { componentesKit.splice(idx, 1); renderTablaComponentesKit(); }
+
+    function buscarProductoAutocompKit(idx) {
+      clearTimeout(componentesKit[idx]?.__t);
+      const input = document.getElementById(`compKit-${idx}`);
+      const codigo = (input?.value || '').trim().toUpperCase();
+      if (!codigo) return;
+      componentesKit[idx].__t = setTimeout(() => {
+        google.script.run.withSuccessHandler(productos => mostrarAutocompCompKit(idx, productos)).buscarProductoPorCodigo(codigo);
+      }, 200);
+    }
+    function mostrarAutocompCompKit(idx, productos = []) {
+      const dropdown = document.getElementById(`autocompleteCompKit-${idx}`);
+      if (!dropdown) return;
+      if (productos.length === 0) { dropdown.style.display = "none"; return; }
+      let html = "";
+      productos.forEach(p => {
+        html += `<div class="autocomplete-item" onmousedown="seleccionarCompKit(${idx}, '${p.codigo}', '${p.nombre}')"><div class="autocomplete-code">${p.codigo}</div><div class="autocomplete-name">${p.nombre} - ${p.grupo || ''}</div></div>`;
+      });
+      dropdown.innerHTML = html;
+      dropdown.style.display = "block";
+    }
+    function seleccionarCompKit(idx, codigo, nombre) {
+      const input = document.getElementById(`compKit-${idx}`);
+      if (input) input.value = codigo;
+      componentesKit[idx].codigo = codigo;
+      componentesKit[idx].nombre = nombre;
+      const dropdown = document.getElementById(`autocompleteCompKit-${idx}`);
+      if (dropdown) dropdown.style.display = "none";
+    }
+    function ocultarAutocompCompKit(idx) { setTimeout(() => { const dropdown = document.getElementById(`autocompleteCompKit-${idx}`); if (dropdown) dropdown.style.display = "none"; }, 150); }
+
+    function renderTablaComponentesKit() {
+      const container = document.getElementById('tablaComponentesKit');
+      if (!container) return;
+      if (componentesKit.length === 0) { container.innerHTML = '<div class="message info">Agregue componentes al kit.</div>'; return; }
+      let html = `<table><thead><tr><th>#</th><th>Producto</th><th>Cantidad</th><th></th></tr></thead><tbody>`;
+      componentesKit.forEach((c, i) => {
+        html += `<tr><td>${i + 1}</td>
+          <td>
+            <div class="autocomplete-container">
+              <input id="compKit-${i}" type="text" value="${c.codigo || ''}" placeholder="Código de producto"
+                onkeyup="buscarProductoAutocompKit(${i})"
+                onblur="ocultarAutocompCompKit(${i})"
+                onfocus="mostrarAutocompCompKit(${i}, [])">
+              <div id="autocompleteCompKit-${i}" class="autocomplete-dropdown"></div>
+            </div>
+          </td>
+          <td><input type="number" min="0.01" step="0.01" value="${c.cantidad || ''}" oninput="updateComponenteKit(${i}, 'cantidad', this.value)"></td>
+          <td><button class="btn btn-danger" style="padding:6px 10px;font-size:0.8rem" onclick="removeComponenteKit(${i})">🗑️</button></td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    function limpiarFormKit() {
+      editandoKit = false;
+      document.getElementById('formKit').reset();
+      document.getElementById('msgKit').innerHTML = '';
+      componentesKit = [];
+      renderTablaComponentesKit();
+      cargarKitCodigo();
+    }
+
+    function guardarKit(e) {
+      e.preventDefault();
+      const kit = {
+        codigo: document.getElementById('kitCodigo').value.trim().toUpperCase(),
+        nombre: document.getElementById('kitNombre').value.trim(),
+        descripcion: document.getElementById('kitDescripcion').value.trim(),
+        estado: document.getElementById('kitEstado').value,
+        componentes: componentesKit.map(c => ({ codigo: (c.codigo || '').toUpperCase().trim(), cantidad: parseFloat(c.cantidad) || 0 }))
+      };
+      google.script.run.withSuccessHandler(res => {
+        showMessage('msgKit', res.mensaje || (res.ok ? 'Kit guardado' : 'Error'), res.ok ? 'success' : 'error');
+        if (res.ok) { limpiarFormKit(); cargarKits(); cargarKitCodigo(); }
+      }).guardarKit(kit);
+    }
+
+    function cargarKits() {
+      google.script.run.withSuccessHandler(data => {
+        kitsDisponibles = data || [];
+        kitsMap = {};
+        kitsDisponibles.forEach(k => { kitsMap[k.codigo.toUpperCase()] = k; });
+        renderTablaKits(kitsDisponibles);
+      }).obtenerKits();
+    }
+
+    function filtrarKits() {
+      const t = document.getElementById('filtroKitTexto').value.toLowerCase().trim();
+      const est = document.getElementById('filtroKitEstado').value.toUpperCase();
+      const filtered = kitsDisponibles.filter(k => { return (!t || k.codigo.toLowerCase().includes(t) || (k.nombre || '').toLowerCase().includes(t)) && (!est || k.estado.toUpperCase() === est); });
+      renderTablaKits(filtered);
+    }
+
+    function renderTablaKits(data) {
+      const container = document.getElementById('tablaKits');
+      if (!container) return;
+      if (!data || data.length === 0) { container.innerHTML = '<div class="message info">No hay kits registrados.</div>'; return; }
+      let html = `<table><thead><tr><th>Código</th><th>Nombre</th><th>Estado</th><th>Disp. (kits)</th><th>Limitante</th><th>Acciones</th></tr></thead><tbody>`;
+      data.forEach(k => {
+        const estadoBadge = k.estado === 'ACTIVO'
+          ? '<span style="background:#d4edda; color:#155724; padding:4px 8px; border-radius:4px; font-size:0.8rem;">✓ Activo</span>'
+          : '<span style="background:#f8d7da; color:#721c24; padding:4px 8px; border-radius:4px; font-size:0.8rem;">✗ Inactivo</span>';
+
+        html += `<tr><td><strong>${k.codigo}</strong></td><td>${k.nombre}</td><td>${estadoBadge}</td><td>${k.disponible || 0}</td><td>${k.limitante || '-'}</td>
+          <td style="white-space: nowrap;">
+            <button class="btn btn-info" style="padding:6px 10px;font-size:0.8rem" onclick="verDetalleKit('${k.codigo}')">👁️</button>
+            <button class="btn btn-warning" style="padding:6px 10px;font-size:0.8rem" onclick="editarKit('${k.codigo}')">✏️</button>
+            ${k.estado === 'ACTIVO'
+              ? `<button class="btn btn-danger" style="padding:6px 10px;font-size:0.8rem" onclick="cambiarEstadoKit('${k.codigo}','INACTIVO')">🗑️</button>`
+              : `<button class="btn btn-success" style="padding:6px 10px;font-size:0.8rem" onclick="cambiarEstadoKit('${k.codigo}','ACTIVO')">✓</button>`
+            }
+          </td></tr>`;
+      });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    function verDetalleKit(codigo) {
+      google.script.run.withSuccessHandler(det => {
+        if (!det) { alert('Kit no encontrado'); return; }
+        let compTxt = det.componentes.map(c => `- ${c.codigo} x ${c.cantidad}`).join('\n');
+        alert(`Código: ${det.codigo}\nNombre: ${det.nombre}\nComponentes:\n${compTxt}`);
+      }).obtenerKitDetalle(codigo);
+    }
+
+    function editarKit(codigo) {
+      google.script.run.withSuccessHandler(det => {
+        if (!det) { alert('Kit no encontrado'); return; }
+        editandoKit = true;
+        document.getElementById('kitCodigo').value = det.codigo;
+        document.getElementById('kitNombre').value = det.nombre;
+        document.getElementById('kitDescripcion').value = det.descripcion || '';
+        document.getElementById('kitEstado').value = det.estado || 'ACTIVO';
+        componentesKit = det.componentes.map(c => ({ codigo: c.codigo, cantidad: c.cantidad, nombre: c.nombre || '' }));
+        renderTablaComponentesKit();
+        showMessage('msgKit', `Editando kit ${det.codigo}`, 'info');
+      }).obtenerKitDetalle(codigo);
+    }
+
+    function cambiarEstadoKit(codigo, estado) {
+      google.script.run.withSuccessHandler(res => {
+        showMessage('msgKit', res.mensaje || (res.ok ? 'Estado actualizado' : 'Error'), res.ok ? 'success' : 'error');
+        if (res.ok) cargarKits();
+      }).cambiarEstadoKit(codigo, estado);
+    }
+
+    function exportarKits() {
+      google.script.run.withSuccessHandler(url => { if (url) window.open(url, '_blank'); }).exportarKitsCSV();
+    }
+
+    /* ------------------- MOVIMIENTOS ------------------- */
+    function addMovimientoDraft(event) {
+      event.preventDefault();
+      const mov = {
+        codigo: document.getElementById("codigoMov").value.trim().toUpperCase(),
+        fecha: document.getElementById("fechaMov").value,
+        tipo: document.getElementById("tipoMov").value,
+        cantidad: parseFloat(document.getElementById("cantMov").value) || 0,
+        observaciones: document.getElementById("obsMov").value.trim()
+      };
+      const errores = [];
+      if (!mov.codigo) errores.push("Código requerido");
+      if (!(mov.cantidad > 0)) errores.push("Cantidad debe ser > 0");
+      if (errores.length) { showMessage('msgMov', errores.join('. '), 'error'); return; }
+      borradoresMov.push(mov);
+      renderTablaBorradores();
+      document.getElementById('formMovimiento').reset();
+      document.getElementById("fechaMov").valueAsDate = new Date();
+      showMessage('msgMov', 'Movimiento agregado al lote', 'info');
+    }
+
+    function renderTablaBorradores() {
+      const container = document.getElementById('borradoresTable');
+      if (!container) return;
+      if (borradoresMov.length === 0) { container.innerHTML = '<div class="message info">No hay movimientos en el lote.</div>'; return; }
+      let html = `<table><thead><tr><th>#</th><th>Código</th><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Obs</th><th></th></tr></thead><tbody>`;
+      borradoresMov.forEach((m, i) => {
+        html += `<tr><td>${i + 1}</td><td>${m.codigo}</td><td>${m.fecha}</td><td>${m.tipo}</td><td>${m.cantidad}</td><td>${m.observaciones || ''}</td><td><button class="btn btn-danger" style="padding:6px 10px;font-size:0.8rem" onclick="deleteDraft(${i})">🗑️</button></td></tr>`;
+      });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    function deleteDraft(idx) { borradoresMov.splice(idx, 1); renderTablaBorradores(); }
+
+    function guardarLoteMovimientos() {
+      if (borradoresMov.length === 0) { showMessage('msgMov', 'No hay movimientos para guardar', 'warning'); return; }
+      const btn = document.getElementById('btnGuardarLote');
+      if (btn) btn.disabled = true;
+      google.script.run.withSuccessHandler(res => {
+        if (res.ok) { showMessage('msgMov', 'Movimientos registrados correctamente', 'success'); borradoresMov = []; renderTablaBorradores(); mostrarStock(); }
+        else { showMessage('msgMov', 'Errores: ' + res.errores.join(' | '), 'error'); }
+        if (btn) btn.disabled = false;
+      }).withFailureHandler(err => { showMessage('msgMov', 'Error: ' + err, 'error'); if (btn) btn.disabled = false; }).registrarMovimientosBatch(borradoresMov);
+    }
+
+    function buscarProductoAutocompletado() {
+      clearTimeout(autocompleteTimeout);
+      const input = document.getElementById("codigoMov");
+      const dropdown = document.getElementById("autocompleteDropdown");
+      const codigo = input.value.trim().toUpperCase();
+      if (codigo.length === 0) { dropdown.style.display = "none"; return; }
+      autocompleteTimeout = setTimeout(() => {
+        google.script.run.withSuccessHandler(productos => {
+          if (productos.length === 0) { dropdown.style.display = "none"; return; }
+          let html = "";
+          productos.forEach(producto => {
+            html += `<div class="autocomplete-item" onmousedown="seleccionarProducto('${producto.codigo}')"><div class="autocomplete-code">${producto.codigo}</div><div class="autocomplete-name">${producto.nombre} - ${producto.grupo}</div></div>`;
+          });
+          dropdown.innerHTML = html; dropdown.style.display = "block";
+        }).buscarProductoPorCodigo(codigo);
+      }, 200);
+    }
+
+    function seleccionarProducto(codigo) { document.getElementById("codigoMov").value = codigo; document.getElementById("autocompleteDropdown").style.display = "none"; }
+    function ocultarAutocompletado() { setTimeout(() => { document.getElementById("autocompleteDropdown").style.display = "none"; }, 150); }
+    function mostrarAutocompletado() { if(document.getElementById("codigoMov").value) buscarProductoAutocompletado(); }
+
+    /* ------------------- INVENTARIO ------------------- */
+    function mostrarStock() {
+      const loading = document.getElementById("loading");
+      const container = document.getElementById("stockTable");
+      if (loading) loading.style.display = "block";
+      google.script.run.withSuccessHandler(data => { if (loading) loading.style.display = "none"; displayStockTable(data, container); }).obtenerStock();
+    }
+    function displayStockTable(data, container) {
+      if (data.length === 0) { container.innerHTML = '<div class="message warning">No hay productos registrados</div>'; return; }
+      let html = `<table><thead><tr><th>Código</th><th>Nombre</th><th>Unidad</th><th>Grupo</th><th>Stock Mín.</th><th>Stock Actual</th><th>Estado</th></tr></thead><tbody>`;
+      data.forEach(producto => {
+        let statusClass = 'status-normal', estado = 'Normal';
+        if (producto.cantidad <= 0) { statusClass = 'status-zero'; estado = 'Sin Stock'; }
+        else if (producto.cantidad <= producto.stockMin && producto.stockMin > 0) { statusClass = 'status-low'; estado = 'Stock Bajo'; }
+        html += `<tr class="${statusClass}"><td>${producto.codigo}</td><td>${producto.nombre}</td><td>${producto.unidad}</td><td>${producto.grupo}</td><td>${producto.stockMin}</td><td>${producto.cantidad}</td><td>${estado}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    /* ------------------- CAJA REGISTRADORA (ACTUALIZADO) ------------------- */
+    function _n(v){ const x = parseFloat(v); return isNaN(x) ? 0 : x; }
+
+    function lineaSubTotal(p){ return _n(p.cantidad) * _n(p.precioUnitario); }
+    function lineaDescMonto(p){
+      const sub = lineaSubTotal(p);
+      let d = _n(p.descMonto);
+      if (d < 0) d = 0;
+      if (d > sub) d = sub;
+      return d;
+    }
+    function lineaImporte(p){ return Math.max(0, lineaSubTotal(p) - lineaDescMonto(p)); }
+
+    let _descLock = false;
+
+    function syncDescFromPct(idx){
+      const p = productosCaja[idx];
+      const sub = lineaSubTotal(p);
+      let pct = _n(p.descPct);
+      if (pct < 0) pct = 0;
+      const monto = sub * (pct/100);
+      p.descMonto = monto.toFixed(2);
+    }
+
+    function syncDescFromMonto(idx){
+      const p = productosCaja[idx];
+      const sub = lineaSubTotal(p);
+      const monto = lineaDescMonto(p);
+      const pct = sub > 0 ? (monto/sub)*100 : 0;
+      p.descPct = pct.toFixed(2);
+    }
+
+    function onLineaDescPctChange(idx, v){
+      if (_descLock) return;
+      _descLock = true;
+      productosCaja[idx].descPct = v;
+      syncDescFromPct(idx);
+      _descLock = false;
+      renderTablaCajaProductos();
+      recalcularTotalesCaja();
+    }
+
+    function onLineaDescMontoChange(idx, v){
+      if (_descLock) return;
+      _descLock = true;
+      productosCaja[idx].descMonto = v;
+      syncDescFromMonto(idx);
+      _descLock = false;
+      renderTablaCajaProductos();
+      recalcularTotalesCaja();
+    }
+
+    function cargarIdCaja(tipo) {
+      const tipoArg = tipo || (document.getElementById('cajaTipo') ? document.getElementById('cajaTipo').value : '');
+      google.script.run.withSuccessHandler(id => { const el = document.getElementById('cajaId'); if (el) el.value = id || ''; }).generarIdCaja(tipoArg);
+    }
+
+    function cargarClientesCaja() {
+      google.script.run.withSuccessHandler(data => {
+        clientesCaja = (data || []).filter(c => (c.estado || '').toUpperCase() === 'ACTIVO');
+        const sel = document.getElementById('cajaCliente');
+        if (!sel) return;
+        sel.innerHTML = '<option value="">Seleccione...</option>';
+        clientesCaja.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.clave;
+          opt.textContent = `${c.clave} - ${c.nombre}`;
+          sel.appendChild(opt);
+        });
+      }).obtenerClientes();
+    }
+
+    function cargarCajaInicial() {
+      const tipo = document.getElementById('cajaTipo') ? document.getElementById('cajaTipo').value : 'SALIDA_X_RENTA';
+      cargarIdCaja(tipo); cargarClientesCaja();
+      const fCaja = document.getElementById("cajaFecha"); if (fCaja) fCaja.valueAsDate = new Date();
+      productosCaja = [];
+      renderTablaCajaProductos();
+      recalcularTotalesCaja();
+    }
+
+    function refrescarCamposCaja() { 
+      cargarIdCaja(); 
+      renderTablaCajaProductos(); 
+      recalcularTotalesCaja();
+    }
+
+    function addProductoCaja() { 
+      productosCaja.push({ 
+        tipoItem: 'PROD', producto: '', cantidad: '',
+        precioUnitario: '', descPct: '0', descMonto: '0',
+        fechaInicio: '', fechaFin: '', origenKit: ''
+      }); 
+      renderTablaCajaProductos(); 
+      recalcularTotalesCaja();
+    }
+
+    function addKitCaja() { 
+      productosCaja.push({ 
+        tipoItem: 'KIT', producto: '', cantidad: '',
+        precioUnitario: '', descPct: '0', descMonto: '0',
+        fechaInicio: '', fechaFin: '', origenKit: '', componentes: []
+      }); 
+      renderTablaCajaProductos(); 
+      recalcularTotalesCaja();
+    }
+
+    function updateProductoCaja(idx, field, value) {
+      productosCaja[idx][field] = value;
+
+      if (['cantidad','precioUnitario'].includes(field)) {
+        const sub = lineaSubTotal(productosCaja[idx]);
+        const d = _n(productosCaja[idx].descMonto);
+        if (d > sub) productosCaja[idx].descMonto = sub.toFixed(2);
+        syncDescFromMonto(idx);
+      }
+
+      renderTablaCajaProductos();
+      recalcularTotalesCaja();
+    }
+
+    function removeProductoCaja(idx) { productosCaja.splice(idx, 1); renderTablaCajaProductos(); recalcularTotalesCaja(); }
+
+    function buscarProductoCajaAutocompletado(idx) {
+      clearTimeout(productosCaja[idx]?.__t);
+      const input = document.getElementById(`productoCaja-${idx}`);
+      const dropdown = document.getElementById(`autocompleteDropdownCaja-${idx}`);
+      const codigo = (input?.value || '').trim().toUpperCase();
+      if (!codigo) { if (dropdown) dropdown.style.display = 'none'; return; }
+      productosCaja[idx].__t = setTimeout(() => {
+        const tipo = productosCaja[idx].tipoItem;
+        if (tipo === 'KIT') { google.script.run.withSuccessHandler(kits => mostrarAutocompletadoCaja(idx, kits, true)).buscarKitPorCodigo(codigo); }
+        else { google.script.run.withSuccessHandler(productos => mostrarAutocompletadoCaja(idx, productos, false)).buscarProductoPorCodigo(codigo); }
+      }, 200);
+    }
+
+    function mostrarAutocompletadoCaja(idx, items = [], esKit = false) {
+      const dropdown = document.getElementById(`autocompleteDropdownCaja-${idx}`);
+      if (!dropdown) return;
+      if (items.length === 0) { dropdown.style.display = "none"; return; }
+      let html = "";
+      items.forEach(p => {
+        html += `<div class="autocomplete-item" onmousedown="seleccionarProductoCaja(${idx}, '${p.codigo}', ${esKit})"><div class="autocomplete-code">${p.codigo}</div><div class="autocomplete-name">${p.nombre || ''} ${esKit ? '(KIT)' : ''}</div></div>`;
+      });
+      dropdown.innerHTML = html; dropdown.style.display = "block";
+    }
+
+    function seleccionarProductoCaja(idx, codigo, esKit) {
+      const input = document.getElementById(`productoCaja-${idx}`);
+      if (input) input.value = codigo;
+      productosCaja[idx].producto = codigo;
+      const dropdown = document.getElementById(`autocompleteDropdownCaja-${idx}`);
+      if (dropdown) dropdown.style.display = "none";
+
+      if (esKit) {
+        google.script.run.withSuccessHandler(det => {
+          productosCaja[idx].componentes = det ? det.componentes || [] : [];
+          productosCaja[idx].kitNombre = det ? det.nombre : '';
+          renderTablaCajaProductos();
+          recalcularTotalesCaja();
+        }).obtenerKitDetalle(codigo);
+      } else {
+        // Autollenar precio unitario desde hoja Productos (columna "Precio")
+        google.script.run.withSuccessHandler(precio => {
+          const actual = parseFloat(productosCaja[idx].precioUnitario);
+          if (!(actual > 0)) productosCaja[idx].precioUnitario = (parseFloat(precio) || 0).toFixed(2);
+          renderTablaCajaProductos();
+          recalcularTotalesCaja();
+        }).obtenerPrecioProductoPorCodigo(codigo);
+      }
+    }
+
+    function ocultarAutocompletadoCaja(idx) { setTimeout(() => { const dropdown = document.getElementById(`autocompleteDropdownCaja-${idx}`); if (dropdown) dropdown.style.display = "none"; }, 150); }
+
+    function renderTablaCajaProductos() {
+      const container = document.getElementById('cajaProductosTable');
+      if (!container) return;
+      if (productosCaja.length === 0) { container.innerHTML = '<div class="message info">Agregue productos o kits a la caja.</div>'; return; }
+
+      const tipoCaja = document.getElementById('cajaTipo') ? document.getElementById('cajaTipo').value : 'SALIDA_X_RENTA';
+
+      let html = `<table><thead><tr>
+        <th>#</th><th>Tipo</th><th>Código</th><th>Cantidad</th>
+        <th>Precio Unit.</th><th>Desc %</th><th>Desc $</th><th>IMPORTE</th>`;
+
+      if (tipoCaja === 'SALIDA_X_RENTA') html += `<th>Fecha Inicio</th><th>Fecha Fin</th>`;
+      html += `<th>Detalle</th><th></th></tr></thead><tbody>`;
+
+      productosCaja.forEach((p, i) => {
+        const esKit = p.tipoItem === 'KIT';
+        const disp = esKit ? (kitsMap[p.producto]?.disponible ?? '-') : '';
+        const imp = lineaImporte(p);
+
+        html += `<tr>
+          <td>${i+1}</td>
+          <td>${esKit ? '<span class="text-warning">KIT</span>' : 'Producto'}</td>
+          <td>
+            <div class="autocomplete-container">
+              <input id="productoCaja-${i}" type="text" value="${p.producto || ''}"
+                placeholder="${esKit ? 'Código del kit' : 'Código del producto'}"
+                onkeyup="buscarProductoCajaAutocompletado(${i})"
+                onblur="ocultarAutocompletadoCaja(${i})"
+                onfocus="mostrarAutocompletadoCaja(${i}, [], ${esKit})">
+              <div id="autocompleteDropdownCaja-${i}" class="autocomplete-dropdown"></div>
+            </div>
+          </td>
+          <td><input type="number" min="0.01" step="0.01" value="${p.cantidad || ''}" oninput="updateProductoCaja(${i}, 'cantidad', this.value)"></td>
+         <td>
+  <input
+    type="number"
+    readonly
+    style="background:#f5f5f5;width:110px;"
+    value="${p.precioUnitario || ''}">
+</td>
+          <td><input type="number" min="0" step="0.01" value="${p.descPct ?? '0'}" oninput="onLineaDescPctChange(${i}, this.value)" style="width:90px;"></td>
+          <td><input type="number" min="0" step="0.01" value="${p.descMonto ?? '0'}" oninput="onLineaDescMontoChange(${i}, this.value)" style="width:110px;"></td>
+          <td><input readonly style="background:#f5f5f5;width:120px;" value="${imp.toFixed(2)}"></td>`;
+
+        if (tipoCaja === 'SALIDA_X_RENTA') {
+          html += `<td><input type="date" value="${p.fechaInicio || ''}" onchange="updateProductoCaja(${i}, 'fechaInicio', this.value)"></td>
+                   <td><input type="date" value="${p.fechaFin || ''}" onchange="updateProductoCaja(${i}, 'fechaFin', this.value)"></td>`;
+        }
+
+        let detalle = '';
+        if (esKit) {
+          detalle += `<div>Disp: ${disp}</div><div style="font-size:.85rem;color:#6c757d;">Precio/Descuento aplican por KIT</div>`;
+          if (p.componentes && p.componentes.length) {
+            detalle += '<ul style="margin-top:6px; margin-bottom:0; padding-left:16px; font-size:0.85rem;">';
+            p.componentes.forEach(c => { detalle += `<li>${c.codigo} x ${c.cantidad}</li>`; });
+            detalle += '</ul>';
+          } else { detalle += '<div style="color:#dc3545;font-size:0.85rem;">(Sin componentes)</div>'; }
+        }
+
+        html += `<td>${detalle}</td>
+          <td><button class="btn btn-danger" style="padding:6px 10px;font-size:0.8rem" onclick="removeProductoCaja(${i})">🗑️</button></td>
+        </tr>`;
+      });
+
+      html += `</tbody></table>`;
+      container.innerHTML = html;
+    }
+
+    function recalcularTotalesCaja() {
+      let subTotal = 0;
+      let descuento = 0;
+
+      productosCaja.forEach(p => {
+        subTotal += lineaSubTotal(p);
+        descuento += lineaDescMonto(p);
+      });
+
+      const ivaPct = Math.max(0, _n(document.getElementById("ventaIvaPct")?.value));
+      const base = Math.max(0, subTotal - descuento);
+      const iva = base * (ivaPct/100);
+      const total = base + iva;
+
+      const st = document.getElementById("ventaSubTotal");
+      const ds = document.getElementById("ventaDescuentoTotal");
+      const iv = document.getElementById("ventaIvaMonto");
+      const tt = document.getElementById("ventaTotal");
+
+      if (st) st.value = subTotal.toFixed(2);
+      if (ds) ds.value = descuento.toFixed(2);
+      if (iv) iv.value = iva.toFixed(2);
+      if (tt) tt.value = total.toFixed(2);
+    }
+
+    function guardarCaja(e) {
+      e.preventDefault();
+      if (guardandoCaja) { showMessage('msgCaja', 'Guardado en progreso...', 'info'); return; }
+
+      const cabecera = {
+        idRegistro: document.getElementById('cajaId').value.trim(),
+        cliente: document.getElementById('cajaCliente').value.trim(),
+        agente: document.getElementById('cajaAgente').value.trim(),
+        obra: document.getElementById('cajaObra').value.trim(),
+        remision: document.getElementById('cajaRemision').value.trim(),
+        tipo: document.getElementById('cajaTipo').value,
+        fechaCaptura: document.getElementById('cajaFecha').value
+      };
+
+      if (!cabecera.cliente) { showMessage('msgCaja', 'Cliente es obligatorio', 'error'); return; }
+      if (productosCaja.length === 0) { showMessage('msgCaja', 'Agregue al menos un producto o kit', 'error'); return; }
+
+      const errores = [];
+
+      // Construir payload con expansión + prorrateo por valor (precio base)
+      const prepararPayload = (preciosMap = {}) => {
+        const productosPayload = [];
+
+        for (let idx = 0; idx < productosCaja.length; idx++) {
+          const item = productosCaja[idx];
+          const linea = idx + 1;
+
+          if (!item.producto) { errores.push(`Línea ${linea}: producto requerido`); continue; }
+
+          const cantBase = _n(item.cantidad);
+          if (!(cantBase > 0)) { errores.push(`Línea ${linea}: cantidad inválida`); continue; }
+
+          const puLineaCapt = _n(item.precioUnitario);
+          if (!(puLineaCapt >= 0)) { errores.push(`Línea ${linea}: precio inválido`); continue; }
+
+          if (cabecera.tipo === 'SALIDA_X_RENTA') {
+            if (!item.fechaInicio || !item.fechaFin) errores.push(`Línea ${linea}: fechas requeridas`);
+            if (item.fechaInicio && item.fechaFin && new Date(item.fechaInicio) > new Date(item.fechaFin)) errores.push(`Línea ${linea}: fecha inicio > fecha fin`);
+          }
+
+          const subCab = cantBase * puLineaCapt;
+          let descMontoCab = Math.max(0, _n(item.descMonto));
+          if (descMontoCab > subCab) descMontoCab = subCab;
+          const descPctCab = subCab > 0 ? (descMontoCab / subCab) * 100 : 0;
+
+          if (item.tipoItem === 'KIT') {
+            if (!item.componentes || item.componentes.length === 0) { errores.push(`Línea ${linea}: kit sin componentes`); continue; }
+
+            // prorrateo por valor: valorComp = (cantCompEnKit * precioProductoBase)
+            let totalValor = 0;
+            const comps = item.componentes.map(c => {
+              const cod = String(c.codigo || '').toUpperCase();
+              const cantCompKit = _n(c.cantidad);
+              const cantCompReal = cantCompKit * cantBase;
+              const precioBase = _n(preciosMap[cod]); // desde hoja Productos
+              const valor = cantCompReal * precioBase;
+              totalValor += valor;
+              return { cod, cantCompReal, valor };
+            });
+
+            // fallback si no hay precios base (todo 0): prorrateo por cantidad
+            if (!(totalValor > 0)) {
+              totalValor = comps.reduce((s, x) => s + x.cantCompReal, 0);
+              comps.forEach(x => { x.valor = x.cantCompReal; });
+            }
+            if (!(totalValor > 0)) { errores.push(`Línea ${linea}: no se pudo prorratear kit (valores 0)`); continue; }
+
+            comps.forEach(x => {
+              const ratio = x.valor / totalValor;
+              const subLinea = subCab * ratio;
+              const descLinea = descMontoCab * ratio;
+              const impLinea = Math.max(0, subLinea - descLinea);
+              const puEfectivo = x.cantCompReal > 0 ? (subLinea / x.cantCompReal) : 0;
+
+              productosPayload.push({
+                producto: x.cod,
+                cantidad: x.cantCompReal,
+                fechaInicio: item.fechaInicio || '',
+                fechaFin: item.fechaFin || '',
+                esKit: true,
+                kitCodigo: item.producto,
+
+                precioUnitario: Number(puEfectivo.toFixed(2)),
+                descPct: Number(descPctCab.toFixed(2)),
+                descMonto: Number(descLinea.toFixed(2)),
+                subTotalLinea: Number(subLinea.toFixed(2)),
+                importeLinea: Number(impLinea.toFixed(2))
+              });
+            });
+
+          } else {
+            // Producto normal
+            const subLinea = subCab;
+            const descLinea = descMontoCab;
+            const impLinea = Math.max(0, subLinea - descLinea);
+
+            productosPayload.push({
+              producto: String(item.producto || '').toUpperCase(),
+              cantidad: cantBase,
+              fechaInicio: item.fechaInicio || '',
+              fechaFin: item.fechaFin || '',
+              esKit: false,
+              kitCodigo: '',
+
+              precioUnitario: Number(puLineaCapt.toFixed(2)),
+              descPct: Number(descPctCab.toFixed(2)),
+              descMonto: Number(descLinea.toFixed(2)),
+              subTotalLinea: Number(subLinea.toFixed(2)),
+              importeLinea: Number(impLinea.toFixed(2))
+            });
+          }
+        }
+
+        return productosPayload;
+      };
+
+      // 1) Para prorrateo de kits por valor, necesitamos precios base de códigos componentes
+      const codigosComponentes = [];
+      productosCaja.forEach(it => {
+        if (it.tipoItem === 'KIT' && Array.isArray(it.componentes)) {
+          it.componentes.forEach(c => {
+            const cod = String(c.codigo || '').trim().toUpperCase();
+            if (cod) codigosComponentes.push(cod);
+          });
+        }
+      });
+      const uniqueCods = Array.from(new Set(codigosComponentes));
+
+      guardandoCaja = true;
+      const btn = document.getElementById('btnCajaGuardar');
+      if (btn) btn.disabled = true;
+
+      const finalizar = () => { guardandoCaja = false; if (btn) btn.disabled = false; };
+
+      const ejecutarGuardar = (preciosMap) => {
+        const productosPayload = prepararPayload(preciosMap || {});
+        if (errores.length) { showMessage('msgCaja', errores.join(' | '), 'error'); finalizar(); return; }
+
+        google.script.run.withSuccessHandler(res => {
+          if (res.ok) { showMessage('msgCaja', `Caja registrada. ID: ${res.idRegistro}`, 'success'); limpiarFormCaja(); }
+          else { showMessage('msgCaja', 'Errores: ' + (res.errores || []).join(' | '), 'error'); }
+          finalizar();
+        }).withFailureHandler(err => {
+          showMessage('msgCaja', 'Error: ' + err, 'error');
+          finalizar();
+        }).registrarCaja({ cabecera, productos: productosPayload });
+      };
+
+      if (uniqueCods.length > 0) {
+        google.script.run.withSuccessHandler(map => ejecutarGuardar(map))
+          .withFailureHandler(_ => ejecutarGuardar({}))
+          .obtenerPreciosProductos(uniqueCods);
+      } else {
+        ejecutarGuardar({});
+      }
+    }
+
+    function limpiarFormCaja() { document.getElementById('formCaja').reset(); productosCaja = []; renderTablaCajaProductos(); cargarCajaInicial(); }
+
+    /* ------------------- CHECK RENTAS ------------------- */
+    function listarRentas() {
+      const estado = document.getElementById('filtroEstadoRenta').value;
+      google.script.run.withSuccessHandler(res => {
+        renderTablaRentas(res || []);
+      }).withFailureHandler(err => showMessage('msgCheck', 'Error al listar: ' + err, 'error'))
+      .listarRentasPorEstado(estado);
+    }
+
+    function formatChild(d) {
+      let rowsHtml = '';
+      if(d.lines && d.lines.length > 0) {
+        d.lines.forEach(l => {
+          rowsHtml += `
+            <tr>
+              <td>${l.codigo}</td>
+              <td>${l.nombre}</td>
+              <td style="text-align:center">${l.cantidad}</td>
+              <td style="text-align:center">${l.fechaInicio || '-'}</td>
+              <td style="text-align:center">${l.fechaFin || '-'}</td>
+            </tr>
+          `;
+        });
+      } else {
+        rowsHtml = '<tr><td colspan="5">No hay detalles disponibles</td></tr>';
+      }
+
+      return `
+        <div style="padding:10px; background:#f9f9f9; border-left:4px solid #2E86AB;">
+          <div style="margin-bottom:8px; font-weight:600; color:#333;">
+            ID: ${d.clienteClave} &nbsp;&nbsp; ${d.cliente}
+          </div>
+          <div style="margin-bottom:12px; color:#555;">
+            Agente: ${d.agente || 'N/A'}
+          </div>
+          <table style="width:100%; font-size:0.9em; border:1px solid #ddd;">
+            <thead style="background:#e9ecef;">
+              <tr>
+                <th>Clave</th>
+                <th>NOMBRE</th>
+                <th>Cantidad</th>
+                <th>Fecha Renta Inicio</th>
+                <th>Fecha Renta Fin</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderTablaRentas(data) {
+      const container = document.getElementById('tablaRentas');
+      if (!container) return;
+      if (!data || data.length === 0) { container.innerHTML = '<div class="message info">No hay rentas registradas con el filtro seleccionado</div>'; return; }
+
+      container.innerHTML = `<table id="tablaRentasTable" class="display" style="width:100%">
+        <thead>
+          <tr>
+            <th></th>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Items</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>`;
+
+      if ($.fn.DataTable.isDataTable('#tablaRentasTable')) { $('#tablaRentasTable').DataTable().destroy(); }
+
+      var table = $('#tablaRentasTable').DataTable({
+        data: data,
+        stateSave: true,
+        columns: [
+          { className: 'details-control', orderable: false, data: null, defaultContent: '➕', width: '30px' },
+          { data: 'id' },
+          { data: 'cliente', defaultContent: '-' },
+          { data: 'lines', render: d => d ? d.length : 0 },
+          {
+            data: null,
+            render: function(data) {
+              if (data.estado === 'COMPLETA') return '<span class="badge badge-ok">✅ Completa</span>';
+              if (data.esVencida === true) return '<span class="badge badge-vencida">🚨 Vencida</span>';
+              if (data.venceHoy === true) return '<span class="badge badge-vencehoy">🔔 Vence Hoy</span>';
+              return '<span class="badge badge-act">🔵 Activo</span>';
+            }
+          },
+          {
+            data: null,
+            render: function(data, type, row) {
+              return `
+                <div style="display:flex; gap:5px; justify-content:flex-start; align-items:center;">
+                  <button class="btn btn-info" style="padding:4px 8px;font-size:0.8rem" onclick="cargarRentaDirecta('${row.id}')">Cargar</button>
+                  <button class="btn btn-warning" style="padding:4px 8px;font-size:0.8rem" onclick="imprimirRentaDesdeTabla('${row.id}')" title="Imprimir">🖨️</button>
+                </div>
+              `;
+            }
+          }
+        ],
+        order: [[1, 'asc']]
+      });
+
+      $('#tablaRentasTable tbody').off('click', 'td.details-control').on('click', 'td.details-control', function () {
+        var tr = $(this).closest('tr');
+        var row = table.row(tr);
+        if (row.child.isShown()) { row.child.hide(); tr.removeClass('shown'); $(this).text('➕'); }
+        else { row.child(formatChild(row.data())).show(); tr.addClass('shown'); $(this).text('➖'); }
+      });
+    }
+
+    function cargarRentaPorId() { const id = document.getElementById('checkBuscarId').value.trim(); cargarRentaDirecta(id); }
+
+    function cargarRentaDirecta(id) {
+      const buscado = (id || '').toString().trim().toUpperCase();
+      if (!buscado) { showMessage('msgCheck', 'Ingrese un ID de renta', 'warning'); return; }
+
+      rentaCargada = null;
+      lineasCheck = [];
+      document.getElementById('panelRenta').style.display = 'none';
+
+      showMessage('msgCheck', 'Buscando renta ' + buscado + '... (y generando debug)', 'info');
+
+      google.script.run.debugValidarRentaToSheet(buscado);
+
+      google.script.run.withSuccessHandler(res => {
+        if (!res || !res.lineas || !res.lineas.length) {
+          showMessage('msgCheck', `No se encontró la renta <strong>${buscado}</strong>. Se ha generado un reporte en la hoja DEBUG_RENTAS.`, 'error');
+          return;
+        }
+        rentaCargada = res;
+        lineasCheck = res.lineas.map(l => ({ codigo: l.codigo, nombre: l.nombre, kitCodigo: l.kitCodigo || '', cantidad: l.cantidad, bueno: 0, danado: 0, faltante: l.cantidad, comentario: '' }));
+        renderRentaDetalle();
+        document.getElementById('panelRenta').style.display = 'block';
+        document.getElementById('checkBuscarId').value = buscado;
+        showMessage('msgCheck', `Renta ${buscado} cargada correctamente`, 'success');
+        document.getElementById('panelRenta').scrollIntoView({ behavior: 'smooth' });
+      }).withFailureHandler(err => showMessage('msgCheck', 'Error crítico: ' + err, 'error')).obtenerRentaPorId(buscado);
+    }
+
+    function renderRentaDetalle() {
+      const resDiv = document.getElementById('resumenRenta');
+      const tDiv = document.getElementById('tablaRentaDetalle');
+      const btnGuardar = document.querySelector('button[onclick="guardarCheckRenta(event)"]');
+
+      if (!rentaCargada) return;
+
+      const r = rentaCargada;
+      resDiv.innerHTML = `<div style="background:#f0f8fc;padding:15px;border-radius:8px;margin-bottom:15px;"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;"><div><strong>ID:</strong> ${r.id}</div><div><strong>Cliente:</strong> ${r.cliente || '-'}</div><div><strong>Fecha:</strong> ${r.fechaCaptura || '-'}</div><div><strong>Obra:</strong> ${r.obra || '-'}</div></div></div>`;
+
+      let html = `<table><thead><tr><th>#</th><th>Producto</th><th>Esperado</th><th>Bueno</th><th>Dañado</th><th>Total</th><th>Estado</th><th>Comentarios</th></tr></thead><tbody>`;
+      let hayErrores = false;
+
+      lineasCheck.forEach((l, i) => {
+        const bueno = parseFloat(l.bueno) || 0;
+        const danado = parseFloat(l.danado) || 0;
+        const total = bueno + danado;
+
+        const esEntero = Number.isInteger(l.cantidad);
+        const step = esEntero ? "1" : "0.01";
+        const preventDecimals = esEntero ? 'onkeypress="return (event.charCode >= 48 && event.charCode <= 57)"' : '';
+
+        let colEstado = '';
+        const diferencia = l.cantidad - total;
+        let rowStyle = '';
+
+        if (total > l.cantidad + 0.001) {
+          const sobrante = (total - l.cantidad).toFixed(esEntero ? 0 : 2);
+          colEstado = `<span style="color:#dc3545; font-weight:bold;">🚫 Excede por ${sobrante}</span>`;
+          hayErrores = true;
+          l.faltante = 0;
+          rowStyle = 'style="background-color:#ffe6e6;"';
+        }
+        else if (diferencia > 0.001) {
+          l.faltante = Number(diferencia.toFixed(2));
+          colEstado = `<strong class="faltante-neg">Falta: ${l.faltante.toFixed(esEntero ? 0 : 2)}</strong>`;
+        }
+        else {
+          l.faltante = 0;
+          colEstado = `<span class="text-success">✓ Completo</span>`;
+        }
+
+        html += `<tr ${rowStyle}>
+          <td>${i + 1}</td>
+          <td><strong>${l.codigo}</strong><br><span style="font-size:0.8em;color:#666">${l.nombre || ''}</span>${l.kitCodigo ? `<br><span class="badge badge-kit">Kit ${l.kitCodigo}</span>` : ''}</td>
+          <td style="font-size:1.1em;text-align:center;">${l.cantidad}</td>
+          <td><input type="number" min="0" step="${step}" ${preventDecimals} value="${l.bueno}" oninput="onChangeLinea(${i}, 'bueno', this.value)" style="width:70px;text-align:center;"></td>
+          <td><input type="number" min="0" step="${step}" ${preventDecimals} value="${l.danado}" oninput="onChangeLinea(${i}, 'danado', this.value)" style="width:70px;text-align:center;"></td>
+          <td style="font-weight:bold;text-align:center;">${total.toFixed(esEntero ? 0 : 2)}</td>
+          <td style="text-align:center;">${colEstado}</td>
+          <td><input type="text" value="${l.comentario || ''}" oninput="onChangeLinea(${i}, 'comentario', this.value)" placeholder="..."></td>
+        </tr>`;
+      });
+
+      html += '</tbody></table>';
+      tDiv.innerHTML = html;
+
+      if (btnGuardar) {
+        if (hayErrores) {
+          btnGuardar.disabled = true;
+          btnGuardar.textContent = "🚫 Corrija los excesos";
+          btnGuardar.style.opacity = "0.6";
+          btnGuardar.style.cursor = "not-allowed";
+        } else {
+          btnGuardar.disabled = false;
+          btnGuardar.textContent = "Guardar check";
+          btnGuardar.style.opacity = "1";
+          btnGuardar.style.cursor = "pointer";
+        }
+      }
+    }
+
+    function onChangeLinea(idx, field, value) {
+      const l = lineasCheck[idx];
+      if (field === 'comentario') { l.comentario = value; return; }
+
+      let num = parseFloat(value);
+      if (isNaN(num) || num < 0) num = 0;
+
+      if (l.cantidad % 1 === 0) {
+        if (num % 1 !== 0) num = Math.floor(num);
+      }
+
+      if (field === 'bueno') l.bueno = num;
+      if (field === 'danado') l.danado = num;
+
+      renderRentaDetalle();
+    }
+
+    function cancelarCheck() {
+      if(confirm("¿Seguro que desea cancelar? Se perderán los cambios.")) {
+        document.getElementById('panelRenta').style.display = 'none';
+        rentaCargada = null;
+        lineasCheck = [];
+        document.getElementById('checkBuscarId').value = '';
+      }
+    }
+
+    function guardarCheckRenta(event) {
+      if (!rentaCargada) return;
+      const btn = event.target;
+      btn.disabled = true; btn.textContent = 'Guardando...';
+      const payload = {
+        id: rentaCargada.id,
+        lineas: lineasCheck,
+        entrego: document.getElementById('checkEntrego').value,
+        recibio: document.getElementById('checkRecibio').value,
+        comentarioGeneral: document.getElementById('checkComentario').value
+      };
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false; btn.textContent = 'Guardar check';
+        if (res.ok) { showMessage('msgCheck', 'Check guardado exitosamente.', 'success'); document.getElementById('panelRenta').style.display = 'none'; listarRentas(); }
+        else { showMessage('msgCheck', 'Error al guardar: ' + res.errores.join(', '), 'error'); }
+      }).withFailureHandler(err => { btn.disabled = false; btn.textContent = 'Guardar check'; showMessage('msgCheck', 'Error de red: ' + err, 'error'); }).guardarCheckRenta(payload);
+    }
+
+    /* ------------------- IMPRESIÓN (USANDO PARAMETROS) ------------------- */
+    function imprimirRentaDesdeTabla(id) {
+      google.script.run.withSuccessHandler(res => {
+        if(!res) { alert("Error al cargar datos para imprimir"); return; }
+        imprimirRentaInternal(res);
+      }).obtenerRentaPorId(id);
+    }
+
+    function imprimirRentaFormato() {
+      if (!rentaCargada) { alert("Primero debe cargar una renta en pantalla."); return; }
+      const data = {...rentaCargada};
+      data.comentarioGeneral = document.getElementById('checkComentario').value;
+      data.entrego = document.getElementById('checkEntrego').value;
+      data.recibio = document.getElementById('checkRecibio').value;
+      if (lineasCheck && lineasCheck.length > 0) data.lineas = lineasCheck;
+      imprimirRentaInternal(data);
+    }
+
+    function imprimirRentaInternal(r) {
+      google.script.run.withSuccessHandler(param => {
+        const p = param || {};
+        const fechaImpresion = new Date().toLocaleDateString();
+
+        const logoBase = (p.logoUrl || "https://lh3.googleusercontent.com/d/1e9ki2xO6zgPsnCYEijV0VqI8szbCxIlY");
+        const logoUrl = logoBase + (logoBase.includes('?') ? '&' : '?') + 'v=' + Date.now();
+
+        const empresaNombre = p.nombre || "MI EMPRESA";
+        const empresaRFC = p.rfc || "";
+        const empresaDir = [p.direccion, p.colonia, p.ciudad, p.estado, p.cp, p.pais].filter(Boolean).join(", ");
+        const empresaTel = p.telefono || "";
+        const empresaWeb = p.web || "";
+        const empresaEmail = p.email || "";
+
+        let filasHtml = "";
+        let totalItems = 0;
+        const lineasAImprimir = r.lineas || [];
+
+        lineasAImprimir.forEach(item => {
+          const cantidad = item.cantidad || item.esperado || 0;
+          const desc = item.nombre || "";
+          const codigo = item.codigo || "";
+          const kit = item.kitCodigo ? `(KIT ${item.kitCodigo})` : "";
+
+          filasHtml += `
+            <tr>
+              <td style="padding: 4px; border-right: 1px solid #C0C0C0; text-align: center;">${cantidad}</td>
+              <td style="padding: 4px; border-right: 1px solid #C0C0C0; text-align: center;">PZA</td>
+              <td style="padding: 4px; border-right: 1px solid #C0C0C0;">${codigo} - ${desc} <span style="font-size:0.8em; color:#666">${kit}</span></td>
+              <td style="padding: 4px; text-align: center;">RENTAL</td>
+            </tr>
+          `;
+          totalItems += parseFloat(cantidad);
+        });
+
+        const minRows = 12;
+        for(let i=lineasAImprimir.length; i<minRows; i++){
+          filasHtml += `<tr><td style="border-right:1px solid #C0C0C0;">&nbsp;</td><td style="border-right:1px solid #C0C0C0;"></td><td style="border-right:1px solid #C0C0C0;"></td><td></td></tr>`;
+        }
+
+        const comentarioFinal = r.comentarioGeneral || r.remision || '';
+        const entregoFinal = r.entrego || '_________________';
+        const recibioFinal = r.recibio || '_________________';
+
+        const ventana = window.open('', '_blank');
+        ventana.document.write(`
+          <html>
+          <head>
+            <title>Remisión ${r.id}</title>
+            <style>
+              body { font-family: Arial, sans-serif; font-size: 11px; color: #000; margin: 0; padding: 20px; }
+              .box { border: 1px solid #C0C0C0; border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+              .box-header { background-color: #F4F4F4; border-bottom: 1px solid #C0C0C0; padding: 4px 8px; font-weight: bold; font-size: 10px; }
+              .box-content { padding: 8px; line-height: 1.4; }
+              .header-grid { display: flex; gap: 10px; margin-bottom: 15px; }
+              .logo-box { width: 120px; height: 100px; display: flex; align-items: center; justify-content: center; }
+              .company-info { flex: 1; text-align: center; font-size: 10px; }
+              .folio-box { width: 180px; }
+              .folio-number { color: #C00000; font-size: 14px; font-weight: bold; text-align: center; margin-top: 5px; }
+              table { width: 100%; border-collapse: collapse; font-size: 10px; }
+              th { background: #F4F4F4; border: 1px solid #C0C0C0; padding: 5px; font-weight: bold; text-align: left; }
+              td { border-bottom: 1px solid #eee; padding: 3px; vertical-align: top; }
+              .totals-section { display: flex; justify-content: space-between; margin-top: 5px; }
+              .signatures { margin-top: 40px; display: flex; justify-content: space-around; }
+              .sig-line { border-top: 1px solid #000; width: 200px; text-align: center; padding-top: 5px; font-weight: bold; }
+              @media print {
+                .no-print { display: none; }
+                body { -webkit-print-color-adjust: exact; padding: 0; }
+              }
+            </style>
+          </head>
+          <body>
+            <button class="no-print" onclick="window.print()" style="padding:10px 20px; margin-bottom:20px; font-size:14px; cursor:pointer;">🖨️ IMPRIMIR</button>
+
+            <div class="header-grid">
+              <div class="box logo-box">
+                <img src="${logoUrl}" style="max-width:100px; max-height:90px;">
+              </div>
+
+              <div class="company-info">
+                <h2 style="font-size: 14px; margin: 0 0 5px 0;">${empresaNombre}</h2>
+                <div>${empresaDir}</div>
+                ${empresaRFC ? `<div style="margin-top:5px; font-weight:bold;">RFC: ${empresaRFC}</div>` : ``}
+                ${empresaTel ? `<div style="margin-top:2px;">TEL: ${empresaTel}</div>` : ``}
+                ${empresaEmail ? `<div style="margin-top:2px;">EMAIL: ${empresaEmail}</div>` : ``}
+                ${empresaWeb ? `<div style="margin-top:2px;">WEB: ${empresaWeb}</div>` : ``}
+              </div>
+
+              <div class="box folio-box">
+                <div class="box-header" style="text-align:center;">REMISIÓN / CONTROL</div>
+                <div class="box-content" style="text-align:center;">
+                  <div class="folio-number">${r.id}</div>
+                  <div style="margin-top:5px;">FECHA: ${r.fechaCaptura || ''}</div>
+                  <div style="font-size:9px; color:#666; margin-top:5px;">Impresión: ${fechaImpresion}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="box">
+              <div class="box-header">DATOS DEL CLIENTE</div>
+              <div class="box-content" style="display:flex; justify-content:space-between;">
+                <div style="width:60%;">
+                  <div style="font-weight:bold; font-size:11px;">${r.cliente || ''}</div>
+                  <div>${r.obra ? 'OBRA: ' + r.obra : ''}</div>
+                </div>
+                <div style="width:35%; text-align:right;">
+                  <div>AGENTE: ${r.agente || 'OFICINA'}</div>
+                  <div>CLAVE: ${r.clienteClave || ''}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="box" style="min-height: 400px; border-bottom: 1px solid #C0C0C0;">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:60px; text-align:center;">CANT.</th>
+                    <th style="width:60px; text-align:center;">UNIDAD</th>
+                    <th>DESCRIPCIÓN</th>
+                    <th style="width:80px; text-align:center;">CLAVE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${filasHtml}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="totals-section">
+              <div style="width: 70%;">
+                <div style="font-size:10px; margin-bottom:5px;">CANTIDAD EN LETRA:</div>
+                <div style="background:#F4F4F4; padding:5px; border-radius:4px; border:1px solid #ddd; font-style:italic;">
+                  ( DOCUMENTO DE CONTROL INTERNO SIN VALOR FISCAL )
+                </div>
+                <div style="margin-top:10px; font-weight:bold; font-size:10px;">Observaciones:</div>
+                <div style="border:1px solid #ddd; height:40px; border-radius:4px; padding:5px;">
+                  ${comentarioFinal}
+                </div>
+              </div>
+              <div style="width: 28%;">
+                <table style="border:none;">
+                  <tr>
+                    <td style="text-align:right; font-weight:bold;">Total Items:</td>
+                    <td style="text-align:right;">${totalItems.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align:right; font-weight:bold;">Estatus:</td>
+                    <td style="text-align:right;">${r.estado || 'ACTIVO'}</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+
+            <div class="signatures">
+              <div class="sig-line">
+                ENTREGÓ (ALMACÉN)<br>
+                <span style="font-weight:normal; font-size:9px;">${entregoFinal}</span>
+              </div>
+              <div class="sig-line">
+                RECIBIÓ (CLIENTE)<br>
+                <span style="font-weight:normal; font-size:9px;">${recibioFinal}</span>
+              </div>
+            </div>
+
+            <div style="margin-top:30px; text-align:center; font-size:9px; color:#999;">
+              ESTE DOCUMENTO ES UNA REPRESENTACIÓN IMPRESA DE UNA ORDEN DE RENTA
+            </div>
+
+          </body>
+          </html>
+        `);
+        ventana.document.close();
+      }).obtenerParametros();
+    }
+
+    /* ------------------- REPORTES & CONFIG ------------------- */
+    function mostrarHistorial() {
+      const filtros = {
+        fechaDesde: document.getElementById("fechaDesde").value,
+        fechaHasta: document.getElementById("fechaHasta").value,
+        tipo: document.getElementById("filtroTipo").value
+      };
+      if (!filtros.fechaDesde || !filtros.fechaHasta) { showMessage('historialTable', 'Seleccione fechas', 'warning'); return; }
+      google.script.run.withSuccessHandler(data => {
+        const container = document.getElementById('historialTable');
+        if (data.length === 0) { container.innerHTML = '<div class="message warning">No hay movimientos</div>'; return; }
+        let html = `<table><thead><tr><th>Fecha</th><th>Código</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Obs</th></tr></thead><tbody>`;
+        data.forEach(mov => {
+          html += `<tr><td>${mov.fecha}</td><td>${mov.codigo}</td><td>${mov.producto}</td><td>${mov.tipoTexto}</td><td>${mov.cantidad}</td><td>${mov.observaciones}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+      }).obtenerHistorial(filtros);
+    }
+
+    function validarIntegridad() {
+      const resDiv = document.getElementById('configResults');
+      resDiv.innerHTML = 'Validando...';
+      google.script.run.withSuccessHandler(res => {
+        if(res.errores.length === 0) resDiv.innerHTML = '<div class="message success">Integridad correcta.</div>';
+        else resDiv.innerHTML = `<div class="message error">Errores:<br>${res.errores.join('<br>')}</div>`;
+      }).validarIntegridad();
+    }
+
+    function inicializarSistema() {
+      if(confirm("Esto creará las hojas faltantes. ¿Continuar?")) {
+        google.script.run.withSuccessHandler(msg => alert(msg)).inicializarHojas();
+      }
+    }
+
+    /* ------------------- MODAL PARAMETROS ------------------- */
+    function abrirParametrosModal() {
+      document.getElementById('paramModal').style.display = 'block';
+      cargarParametrosModal();
+    }
+
+    function closeParametrosModal() {
+      document.getElementById('paramModal').style.display = 'none';
+      document.getElementById('msgParametros').innerHTML = '';
+      const msgLogo = document.getElementById('msgLogo');
+      if (msgLogo) msgLogo.innerHTML = '';
+      limpiarLogoSeleccionado();
+    }
+
+    function cargarParametrosModal() {
+      const inputs = document.querySelectorAll('#formParametros input');
+      inputs.forEach(i => i.disabled = true);
+      document.getElementById('msgParametros').innerHTML = '<span style="color:#2E86AB">Cargando datos...</span>';
+
+      google.script.run.withSuccessHandler(data => {
+        if (data) {
+          document.getElementById('paramNombre').value = data.nombre || '';
+          document.getElementById('paramRFC').value = data.rfc || '';
+          document.getElementById('paramDireccion').value = data.direccion || '';
+          document.getElementById('paramWeb').value = data.web || '';
+          document.getElementById('paramColonia').value = data.colonia || '';
+          document.getElementById('paramCiudad').value = data.ciudad || '';
+          document.getElementById('paramEstado').value = data.estado || '';
+          document.getElementById('paramPais').value = data.pais || '';
+          document.getElementById('paramCP').value = data.cp || '';
+          document.getElementById('paramRegimen').value = data.regimen || '';
+          document.getElementById('paramEmail').value = data.email || '';
+          document.getElementById('paramTelefono').value = data.telefono || '';
+
+          if (data.logoUrl) {
+            aplicarLogoEnUI(data.logoUrl);
+            const prev = document.getElementById('logoPreview');
+            if (prev) { prev.src = data.logoUrl; prev.style.display = 'block'; }
+          }
+        }
+        inputs.forEach(i => i.disabled = false);
+        document.getElementById('msgParametros').innerHTML = '';
+      }).withFailureHandler(err => {
+        document.getElementById('msgParametros').innerHTML = '<span style="color:red">Error al cargar</span>';
+        inputs.forEach(i => i.disabled = false);
+      }).obtenerParametros();
+    }
+
+    function guardarParametrosModal(e) {
+      e.preventDefault();
+      const btn = e.submitter;
+      if(btn) btn.disabled = true;
+      document.getElementById('msgParametros').innerHTML = 'Guardando...';
+
+      const params = {
+        nombre: document.getElementById('paramNombre').value.trim(),
+        rfc: document.getElementById('paramRFC').value.trim(),
+        direccion: document.getElementById('paramDireccion').value.trim(),
+        web: document.getElementById('paramWeb').value.trim(),
+        colonia: document.getElementById('paramColonia').value.trim(),
+        ciudad: document.getElementById('paramCiudad').value.trim(),
+        estado: document.getElementById('paramEstado').value.trim(),
+        pais: document.getElementById('paramPais').value.trim(),
+        cp: document.getElementById('paramCP').value.trim(),
+        regimen: document.getElementById('paramRegimen').value.trim(),
+        email: document.getElementById('paramEmail').value.trim(),
+        telefono: document.getElementById('paramTelefono').value.trim()
+      };
+
+      google.script.run.withSuccessHandler(res => {
+        if(btn) btn.disabled = false;
+        if (res.ok) {
+          document.getElementById('msgParametros').innerHTML = '<span style="color:green; font-weight:bold;">✓ Guardado correctamente</span>';
+          setTimeout(() => { document.getElementById('msgParametros').innerHTML = ''; }, 3000);
+          cargarParametrosParaUI();
+        } else {
+          document.getElementById('msgParametros').innerHTML = '<span style="color:red">' + res.mensaje + '</span>';
+        }
+      }).withFailureHandler(err => {
+        if(btn) btn.disabled = false;
+        document.getElementById('msgParametros').innerHTML = '<span style="color:red">Error de red: ' + err + '</span>';
+      }).guardarParametros(params);
+    }
+
+    /* ------------------- LOGO: Selección/Subida ------------------- */
+    function onLogoSelected() {
+      const input = document.getElementById('paramLogoFile');
+      const file = input?.files?.[0];
+      const msg = document.getElementById('msgLogo');
+      const prev = document.getElementById('logoPreview');
+
+      logoSeleccionado = null;
+
+      if (!file) {
+        if (prev) prev.style.display = 'none';
+        if (msg) msg.innerHTML = '';
+        return;
+      }
+
+      if (!['image/png', 'image/jpeg'].includes(file.type)) {
+        if (msg) msg.innerHTML = '<span style="color:red">Solo PNG o JPG</span>';
+        input.value = '';
+        if (prev) prev.style.display = 'none';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result;
+        logoSeleccionado = { base64, mimeType: file.type };
+        if (prev) { prev.src = base64; prev.style.display = 'block'; }
+        if (msg) msg.innerHTML = '<span style="color:#2E86AB">Logo listo para subir.</span>';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function limpiarLogoSeleccionado() {
+      const input = document.getElementById('paramLogoFile');
+      const prev = document.getElementById('logoPreview');
+      const msg = document.getElementById('msgLogo');
+      if (input) input.value = '';
+      if (prev) { prev.src = ''; prev.style.display = 'none'; }
+      if (msg) msg.innerHTML = '';
+      logoSeleccionado = null;
+    }
+
+    function subirLogoDesdeModal() {
+      const msg = document.getElementById('msgLogo');
+      if (!logoSeleccionado) {
+        if (msg) msg.innerHTML = '<span style="color:#dc3545">Seleccione un archivo primero.</span>';
+        return;
+      }
+      if (msg) msg.innerHTML = '<span style="color:#2E86AB">Subiendo a Drive...</span>';
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res || !res.ok) {
+            if (msg) msg.innerHTML = '<span style="color:#dc3545">Error: ' + (res?.mensaje || 'desconocido') + '</span>';
+            return;
+          }
+          if (msg) msg.innerHTML = '<span style="color:green;font-weight:700">✓ Logo subido</span>';
+          aplicarLogoEnUI(res.logoUrl);
+          logoSeleccionado = null;
+          const input = document.getElementById('paramLogoFile');
+          if (input) input.value = '';
+        })
+        .withFailureHandler(err => {
+          if (msg) msg.innerHTML = '<span style="color:#dc3545">Falla: ' + err + '</span>';
+        })
+        .subirLogoEmpresa(logoSeleccionado);
+    }
+  </script>
+</body>
+</html>
