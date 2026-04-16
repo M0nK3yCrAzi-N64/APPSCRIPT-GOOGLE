@@ -216,6 +216,27 @@
                   <button class="btn btn-success" type="submit" id="btnClienteGuardar">💾 Guardar</button>
                   <button class="btn btn-secondary" type="button" onclick="limpiarFormCliente()">🗑️ Limpiar</button>
                 </div>
+                <!-- Foto Cliente (solo disponible al editar) -->
+                <div id="fotoClienteSection" style="margin-top:16px; padding:15px; border:1px solid #E5F2F7; border-radius:8px; background:#f9fdff;">
+                  <label style="font-weight:600; color:#2E86AB; font-size:0.9rem; margin-bottom:10px; display:block;">📷 Foto del Cliente <small style="font-weight:normal; color:#6c757d;">(disponible al editar)</small></label>
+                  <div style="display:flex; flex-wrap:wrap; align-items:flex-start; gap:12px;">
+                    <div>
+                      <input type="file" id="cliInputFoto" accept="image/*" capture="environment" onchange="onClienteFotoSelected()" disabled style="display:none;">
+                      <label for="cliInputFoto" id="cliLabelFoto" class="btn btn-secondary" style="cursor:pointer; opacity:0.5; pointer-events:none;">📷 Elegir / Tomar foto</label>
+                    </div>
+                    <div id="cliPreviewContainer" style="display:none;">
+                      <img id="cliPreviewImg" src="" alt="Preview" style="max-width:120px; max-height:120px; border-radius:8px; border:1px solid #E5F2F7; object-fit:cover;">
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                      <button type="button" id="btnSubirFotoCliente" class="btn btn-primary" onclick="subirFotoClienteDesdeUI()" disabled style="opacity:0.5;">⬆️ Subir foto</button>
+                      <button type="button" id="btnQuitarFotoCliente" class="btn btn-secondary" onclick="limpiarFotoClienteSeleccionada()" disabled style="opacity:0.5; font-size:0.8rem;">✕ Quitar</button>
+                    </div>
+                  </div>
+                  <div id="msgFotoCliente" style="margin-top:8px; font-size:0.85rem;"></div>
+                  <div id="cliFotoActualContainer" style="margin-top:8px; display:none;">
+                    <small style="color:#6c757d;">Foto actual: </small><a id="cliFotoActualLink" href="#" target="_blank" style="font-size:0.85rem; color:#2E86AB;">Ver foto ↗</a>
+                  </div>
+                </div>
               </form>
               <div id="msgCliente"></div>
             </div>
@@ -763,6 +784,10 @@
       document.getElementById('cliClave').readOnly = true;
       document.getElementById('cliClave').style.background = '#f5f5f5';
       cargarClaveCliente();
+      _setFotoClienteUiEnabled_(false);
+      limpiarFotoClienteSeleccionada();
+      document.getElementById('cliFotoActualContainer').style.display = 'none';
+      document.getElementById('msgFotoCliente').innerHTML = '';
     }
 
     function mostrarClientes() {
@@ -846,6 +871,16 @@
       document.getElementById('cliDireccion').value = cliente.direccion || '';
       document.getElementById('btnClienteGuardar').textContent = 'Actualizar';
       showMessage('msgCliente', `Editando cliente ${cliente.clave}`, 'info');
+      _setFotoClienteUiEnabled_(true);
+      limpiarFotoClienteSeleccionada();
+      const fotoActualContainer = document.getElementById('cliFotoActualContainer');
+      const fotoActualLink = document.getElementById('cliFotoActualLink');
+      if (cliente.fotoUrl) {
+        fotoActualLink.href = cliente.fotoUrl;
+        fotoActualContainer.style.display = 'block';
+      } else {
+        fotoActualContainer.style.display = 'none';
+      }
     }
 
     function confirmarBajaCliente(clave) {
@@ -860,7 +895,91 @@
       }
     }
 
-    /* ------------------- PRODUCTOS ------------------- */
+    /* --- FOTO CLIENTE --- */
+    function _setFotoClienteUiEnabled_(enabled) {
+      const inputFoto = document.getElementById('cliInputFoto');
+      const labelFoto = document.getElementById('cliLabelFoto');
+      const btnSubir = document.getElementById('btnSubirFotoCliente');
+      const btnQuitar = document.getElementById('btnQuitarFotoCliente');
+      if (!inputFoto) return;
+      inputFoto.disabled = !enabled;
+      if (enabled) {
+        labelFoto.style.opacity = '1';
+        labelFoto.style.pointerEvents = 'auto';
+        btnQuitar.disabled = false;
+        btnQuitar.style.opacity = '1';
+      } else {
+        labelFoto.style.opacity = '0.5';
+        labelFoto.style.pointerEvents = 'none';
+        btnSubir.disabled = true;
+        btnSubir.style.opacity = '0.5';
+        btnQuitar.disabled = true;
+        btnQuitar.style.opacity = '0.5';
+      }
+    }
+
+    function onClienteFotoSelected() {
+      const input = document.getElementById('cliInputFoto');
+      const preview = document.getElementById('cliPreviewImg');
+      const previewContainer = document.getElementById('cliPreviewContainer');
+      const btnSubir = document.getElementById('btnSubirFotoCliente');
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          preview.src = e.target.result;
+          previewContainer.style.display = 'block';
+          btnSubir.disabled = false;
+          btnSubir.style.opacity = '1';
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function limpiarFotoClienteSeleccionada() {
+      const input = document.getElementById('cliInputFoto');
+      const preview = document.getElementById('cliPreviewImg');
+      const previewContainer = document.getElementById('cliPreviewContainer');
+      const btnSubir = document.getElementById('btnSubirFotoCliente');
+      if (input) input.value = '';
+      if (preview) preview.src = '';
+      if (previewContainer) previewContainer.style.display = 'none';
+      if (btnSubir) { btnSubir.disabled = true; btnSubir.style.opacity = '0.5'; }
+    }
+
+    function subirFotoClienteDesdeUI() {
+      const input = document.getElementById('cliInputFoto');
+      const clave = document.getElementById('cliClave').value.trim().toUpperCase();
+      const msgEl = document.getElementById('msgFotoCliente');
+      if (!clave) { msgEl.innerHTML = '<span style="color:#dc3545;">Primero guarda el cliente para obtener su clave.</span>'; return; }
+      if (!input.files || !input.files[0]) { msgEl.innerHTML = '<span style="color:#dc3545;">Selecciona una foto primero.</span>'; return; }
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const dataUrl = e.target.result;
+        const parts = dataUrl.split(',');
+        const base64 = parts[1];
+        const mimeType = parts[0].split(':')[1].split(';')[0];
+        msgEl.innerHTML = '<span style="color:#2E86AB;">⏳ Subiendo foto...</span>';
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res && res.ok) {
+              msgEl.innerHTML = '<span style="color:#28a745;">✅ Foto subida correctamente.</span>';
+              const linkContainer = document.getElementById('cliFotoActualContainer');
+              const link = document.getElementById('cliFotoActualLink');
+              if (linkContainer && link) { link.href = res.fotoUrl; linkContainer.style.display = 'block'; }
+              limpiarFotoClienteSeleccionada();
+              mostrarClientes();
+            } else {
+              msgEl.innerHTML = '<span style="color:#dc3545;">❌ Error: ' + (res ? res.error : 'desconocido') + '</span>';
+            }
+          })
+          .withFailureHandler(function(err) {
+            msgEl.innerHTML = '<span style="color:#dc3545;">❌ Error: ' + err + '</span>';
+          })
+          .subirFotoCliente({ claveCliente: clave, base64: base64, mimeType: mimeType });
+      };
+      reader.readAsDataURL(file);
+    }
     function registrarProducto(event) {
       event.preventDefault();
       const producto = {

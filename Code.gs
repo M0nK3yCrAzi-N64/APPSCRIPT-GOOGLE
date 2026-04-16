@@ -137,7 +137,17 @@ function obtenerClientes() {
   const sheet = ss.getSheetByName(HOJA_CLIENTES);
   if (!sheet || sheet.getLastRow() < 2) return [];
   const data = sheet.getDataRange().getValues();
-  return data.slice(1).map(r => ({clave: r[0] || '', nombre: r[1] || '', telefono: r[2] || '', email: r[3] || '', direccion: r[4] || '', estado: r[5] || 'ACTIVO'})).filter(c => c.clave);
+  const headers = data[0];
+  const fotoUrlIdx = headers.indexOf('FotoURL');
+  return data.slice(1).map(r => ({
+    clave: r[0] || '',
+    nombre: r[1] || '',
+    telefono: r[2] || '',
+    email: r[3] || '',
+    direccion: r[4] || '',
+    estado: r[5] || 'ACTIVO',
+    fotoUrl: fotoUrlIdx >= 0 ? (r[fotoUrlIdx] || '') : ''
+  })).filter(c => c.clave);
 }
 
 function eliminarCliente(clave) {
@@ -163,6 +173,82 @@ function reactivarCliente(clave) {
     }
   }
   throw new Error('Cliente no encontrado');
+}
+
+/* ------------------- FOTO CLIENTE ------------------- */
+function _getOrCreateFolderByName_(parentFolder, name) {
+  var folders = parentFolder.getFoldersByName(name);
+  if (folders.hasNext()) return folders.next();
+  return parentFolder.createFolder(name);
+}
+
+function _getClientesFotosFolder_() {
+  return _getOrCreateFolderByName_(DriveApp.getRootFolder(), 'CLIENTES_FOTOS');
+}
+
+function _asegurarColumnasFotoClientes_(sheet) {
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var fotoFileIdCol = headers.indexOf('FotoFileId');
+  var fotoUrlCol = headers.indexOf('FotoURL');
+  if (fotoFileIdCol === -1) {
+    var nextCol = sheet.getLastColumn() + 1;
+    sheet.getRange(1, nextCol).setValue('FotoFileId');
+    headers.push('FotoFileId');
+    fotoFileIdCol = headers.indexOf('FotoFileId');
+  }
+  if (fotoUrlCol === -1) {
+    var nextCol2 = sheet.getLastColumn() + 1;
+    sheet.getRange(1, nextCol2).setValue('FotoURL');
+    headers.push('FotoURL');
+    fotoUrlCol = headers.indexOf('FotoURL');
+  }
+  return { fotoFileIdCol: fotoFileIdCol, fotoUrlCol: fotoUrlCol };
+}
+
+function subirFotoCliente(payload) {
+  try {
+    var claveCliente = (payload.claveCliente || '').toString().trim().toUpperCase();
+    var base64Data = payload.base64;
+    var mimeType = payload.mimeType || 'image/jpeg';
+    if (!claveCliente || !base64Data) throw new Error('Datos insuficientes');
+
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(HOJA_CLIENTES);
+    if (!sheet) throw new Error('Hoja CLIENTES no encontrada');
+
+    var colInfo = _asegurarColumnasFotoClientes_(sheet);
+    var fotoFileIdCol = colInfo.fotoFileIdCol;
+    var fotoUrlCol = colInfo.fotoUrlCol;
+
+    var data = sheet.getDataRange().getValues();
+    var fila = -1;
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][0] && String(data[i][0]).toUpperCase() === claveCliente) {
+        fila = i;
+        break;
+      }
+    }
+    if (fila === -1) throw new Error('Cliente no encontrado: ' + claveCliente);
+
+    var prevFileId = data[fila][fotoFileIdCol];
+    if (prevFileId) {
+      try { DriveApp.getFileById(String(prevFileId)).setTrashed(true); } catch (e) {}
+    }
+
+    var folder = _getClientesFotosFolder_();
+    var blob = Utilities.newBlob(Utilities.base64Decode(base64Data), mimeType, claveCliente + '.jpg');
+    var file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    var fileId = file.getId();
+    var fotoUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w1000';
+
+    sheet.getRange(fila + 1, fotoFileIdCol + 1).setValue(fileId);
+    sheet.getRange(fila + 1, fotoUrlCol + 1).setValue(fotoUrl);
+
+    return { ok: true, fileId: fileId, fotoUrl: fotoUrl };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 }
 
 /* ------------------- PRODUCTOS ------------------- */
