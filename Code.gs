@@ -207,7 +207,7 @@ function subirFotoCliente(payload) {
     // Trash old photo if exists
     var oldFileId = data[rowIdx - 1][cols.idxFileId] ? String(data[rowIdx - 1][cols.idxFileId]).trim() : '';
     if (oldFileId) {
-      try { DriveApp.getFileById(oldFileId).setTrashed(true); } catch(e) { /* ignorar */ }
+      try { DriveApp.getFileById(oldFileId).setTrashed(true); } catch(e) { /* File may already be deleted or inaccessible; safe to ignore */ }
     }
 
     // Save new photo in Drive
