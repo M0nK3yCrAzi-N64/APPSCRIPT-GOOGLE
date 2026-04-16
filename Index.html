@@ -221,15 +221,15 @@
                   <label style="font-weight:600; color:#2E86AB; font-size:0.9rem; margin-bottom:10px; display:block;">📷 Foto del Cliente <small style="font-weight:normal; color:#6c757d;">(disponible al editar)</small></label>
                   <div style="display:flex; flex-wrap:wrap; align-items:flex-start; gap:12px;">
                     <div>
-                      <input type="file" id="cliInputFoto" accept="image/*" capture="environment" onchange="onClienteFotoSelected()" disabled style="display:none;">
-                      <label for="cliInputFoto" id="cliLabelFoto" class="btn btn-secondary" style="cursor:pointer; opacity:0.5; pointer-events:none;">📷 Elegir / Tomar foto</label>
+                      <input type="file" id="cliInputFoto" accept="image/*" capture="environment" onchange="onClienteFotoSelected()" style="display:none;">
+                      <label for="cliInputFoto" id="cliLabelFoto" class="btn btn-secondary" style="cursor:pointer;">📷 Elegir / Tomar foto</label>
                     </div>
                     <div id="cliPreviewContainer" style="display:none;">
                       <img id="cliPreviewImg" src="" alt="Preview" style="max-width:120px; max-height:120px; border-radius:8px; border:1px solid #E5F2F7; object-fit:cover;">
                     </div>
                     <div style="display:flex; flex-direction:column; gap:8px;">
                       <button type="button" id="btnSubirFotoCliente" class="btn btn-primary" onclick="subirFotoClienteDesdeUI()" disabled style="opacity:0.5;">⬆️ Subir foto</button>
-                      <button type="button" id="btnQuitarFotoCliente" class="btn btn-secondary" onclick="limpiarFotoClienteSeleccionada()" disabled style="opacity:0.5; font-size:0.8rem;">✕ Quitar</button>
+                      <button type="button" id="btnQuitarFotoCliente" class="btn btn-secondary" onclick="limpiarFotoClienteSeleccionada()">✕ Quitar</button>
                     </div>
                   </div>
                   <div id="msgFotoCliente" style="margin-top:8px; font-size:0.85rem;"></div>
@@ -897,24 +897,13 @@
 
     /* --- FOTO CLIENTE --- */
     function _setFotoClienteUiEnabled_(enabled) {
-      const inputFoto = document.getElementById('cliInputFoto');
-      const labelFoto = document.getElementById('cliLabelFoto');
+      // Los controles de foto siempre son visibles; solo reseteamos el estado
+      // del botón "Subir" (que se activa al seleccionar archivo).
       const btnSubir = document.getElementById('btnSubirFotoCliente');
-      const btnQuitar = document.getElementById('btnQuitarFotoCliente');
-      if (!inputFoto) return;
-      inputFoto.disabled = !enabled;
-      if (enabled) {
-        labelFoto.style.opacity = '1';
-        labelFoto.style.pointerEvents = 'auto';
-        btnQuitar.disabled = false;
-        btnQuitar.style.opacity = '1';
-      } else {
-        labelFoto.style.opacity = '0.5';
-        labelFoto.style.pointerEvents = 'none';
+      if (!btnSubir) return;
+      if (!enabled) {
         btnSubir.disabled = true;
         btnSubir.style.opacity = '0.5';
-        btnQuitar.disabled = true;
-        btnQuitar.style.opacity = '0.5';
       }
     }
 
