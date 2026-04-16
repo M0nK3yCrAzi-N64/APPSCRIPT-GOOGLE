@@ -137,7 +137,17 @@ function obtenerClientes() {
   const sheet = ss.getSheetByName(HOJA_CLIENTES);
   if (!sheet || sheet.getLastRow() < 2) return [];
   const data = sheet.getDataRange().getValues();
-  return data.slice(1).map(r => ({clave: r[0] || '', nombre: r[1] || '', telefono: r[2] || '', email: r[3] || '', direccion: r[4] || '', estado: r[5] || 'ACTIVO'})).filter(c => c.clave);
+  const headers = data[0];
+  const idxFotoUrl = _getHeaderIndex_(headers, 'FotoUrl');
+  return data.slice(1).map(r => ({
+    clave: r[0] || '',
+    nombre: r[1] || '',
+    telefono: r[2] || '',
+    email: r[3] || '',
+    direccion: r[4] || '',
+    estado: r[5] || 'ACTIVO',
+    fotoUrl: idxFotoUrl >= 0 ? (r[idxFotoUrl] || '') : ''
+  })).filter(c => c.clave);
 }
 
 function eliminarCliente(clave) {
@@ -163,6 +173,73 @@ function reactivarCliente(clave) {
     }
   }
   throw new Error('Cliente no encontrado');
+}
+
+/* ------------------- FOTO CLIENTE ------------------- */
+function _getOrCreateFolderByName_(parent, name) {
+  const iter = parent.getFoldersByName(name);
+  return iter.hasNext() ? iter.next() : parent.createFolder(name);
+}
+
+function _asegurarColumnaClientes_(sheet, columnName) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const idx = _getHeaderIndex_(headers, columnName);
+  if (idx >= 0) return idx + 1; // 1-based
+  const newCol = sheet.getLastColumn() + 1;
+  sheet.getRange(1, newCol).setValue(columnName);
+  return newCol;
+}
+
+function subirFotoCliente(payload) {
+  try {
+    if (!payload || !payload.claveCliente || !payload.base64 || !payload.mimeType) {
+      return { ok: false, error: 'Payload incompleto' };
+    }
+    const clave = String(payload.claveCliente).toUpperCase().trim();
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(HOJA_CLIENTES);
+    if (!sheet) return { ok: false, error: 'Hoja CLIENTES no encontrada' };
+
+    const data = sheet.getDataRange().getValues();
+    let filaIdx = -1;
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]).toUpperCase().trim() === clave) { filaIdx = i; break; }
+    }
+    if (filaIdx < 0) return { ok: false, error: 'Cliente no encontrado: ' + clave };
+
+    // Asegurar columnas FotoFileId y FotoUrl
+    const colFileId = _asegurarColumnaClientes_(sheet, 'FotoFileId');
+    const colFotoUrl = _asegurarColumnaClientes_(sheet, 'FotoUrl');
+
+    // Releer datos por si se agregaron columnas
+    const rowData = sheet.getRange(filaIdx + 1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const prevFileId = rowData[colFileId - 1] ? String(rowData[colFileId - 1]).trim() : '';
+
+    // Carpeta CLIENTES_FOTOS en Drive raíz
+    const rootFolder = DriveApp.getRootFolder();
+    const fotosFolder = _getOrCreateFolderByName_(rootFolder, 'CLIENTES_FOTOS');
+
+    // Crear archivo de imagen
+    const ext = payload.mimeType.split('/')[1] || 'jpg';
+    const blob = Utilities.newBlob(Utilities.base64Decode(payload.base64), payload.mimeType, clave + '.' + ext);
+    const file = fotosFolder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    const fileId = file.getId();
+    const fotoUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w1000';
+
+    // Guardar en hoja
+    sheet.getRange(filaIdx + 1, colFileId).setValue(fileId);
+    sheet.getRange(filaIdx + 1, colFotoUrl).setValue(fotoUrl);
+
+    // Mandar archivo anterior a la papelera si existía
+    if (prevFileId) {
+      try { DriveApp.getFileById(prevFileId).setTrashed(true); } catch (e) { /* ignorar si ya no existe */ }
+    }
+
+    return { ok: true, fileId: fileId, fotoUrl: fotoUrl };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
 }
 
 /* ------------------- PRODUCTOS ------------------- */
