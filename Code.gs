@@ -1309,10 +1309,12 @@ function obtenerSaldoFavorCliente(clienteClave) {
       const cliente = String(r[8] || '').trim().toUpperCase();
       const tipo = String(r[3] || '').trim();
       if (estado === 'Cancelado') return;
+      // 'Cargo Especial' adds credit to the client's balance (anticipo/prepayment).
+      // 'Saldo a Favor' used as payment type deducts from that credit balance.
       if (tipo === 'Cargo Especial' && cliente === clave) saldo += parseFloat(r[2]) || 0;
       if (tipo === 'Saldo a Favor' && cliente === clave) saldo -= parseFloat(r[2]) || 0;
     });
-    return Number(Math.max(0, saldo).toFixed(2));
+    return Math.round(Math.max(0, saldo) * 100) / 100;
   } catch (e) { return 0; }
 }
 

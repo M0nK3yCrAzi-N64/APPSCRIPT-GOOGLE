@@ -3024,7 +3024,7 @@
           { data: 'fecha', defaultContent: '-' },
           { data: 'ventaId', defaultContent: '-' },
           { data: 'cliente', defaultContent: '-' },
-          { data: 'monto', render: v => v > 0 ? '<strong>$' + v.toFixed(2) + '</strong>' : '-' },
+          { data: 'monto', render: v => (v != null && v > 0) ? '<strong>$' + Number(v).toFixed(2) + '</strong>' : '-' },
           { data: 'tipo', render: v => `<span class="badge badge-pend">${v}</span>` },
           { data: 'comentario', defaultContent: '-' },
           {
@@ -3150,7 +3150,7 @@
               <div><strong>Estado:</strong><br>${estadoHtml}</div>
               <div><strong>Folio / Venta:</strong><br>${dep.ventaId || '-'}</div>
               <div><strong>Fecha:</strong><br>${dep.fecha || '-'}</div>
-              <div><strong>Monto:</strong><br><span style="font-size:1.3em;font-weight:700;color:#17a2b8;">$${dep.monto.toFixed(2)}</span></div>
+              <div><strong>Monto:</strong><br><span style="font-size:1.3em;font-weight:700;color:#17a2b8;">$${(dep.monto || 0).toFixed(2)}</span></div>
               <div><strong>Tipo de Pago:</strong><br><span class="badge badge-pend">${dep.tipo}</span></div>
               <div><strong>Referencia:</strong><br>${dep.comentario || '-'}</div>
               <div><strong>Usuario:</strong><br>${dep.usuario || '-'}</div>
