@@ -899,6 +899,7 @@
       const sinFoto = document.getElementById('clienteDetalleSinFoto');
       const fotoLink = document.getElementById('dcFotoLink');
       if (cliente.fotoUrl) {
+        img.onerror = function() { this.style.display = 'none'; sinFoto.style.display = 'inline-flex'; fotoLink.style.display = 'none'; };
         img.src = cliente.fotoUrl;
         img.style.display = 'inline-block';
         sinFoto.style.display = 'none';
@@ -935,12 +936,17 @@
       const fotoActualImg = document.getElementById('cliFotoActualImg');
       if (cliente.fotoUrl) {
         fotoActualLink.href = cliente.fotoUrl;
-        if (fotoActualImg) fotoActualImg.src = cliente.fotoUrl;
+        if (fotoActualImg) {
+          fotoActualImg.onerror = function() { this.style.display = 'none'; };
+          fotoActualImg.style.display = 'block';
+          fotoActualImg.src = cliente.fotoUrl;
+        }
         fotoActualContainer.style.display = 'block';
       } else {
         if (fotoActualImg) fotoActualImg.src = '';
         fotoActualContainer.style.display = 'none';
       }
+      document.getElementById('fotoClienteSection').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     function confirmarBajaCliente(clave) {
