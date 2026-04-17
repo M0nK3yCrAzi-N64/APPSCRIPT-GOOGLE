@@ -996,7 +996,13 @@
       document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
       const tabEl = document.getElementById(tabName);
       if (tabEl) tabEl.classList.add('active');
-      const linkEl = evt ? (evt.currentTarget || (evt.target && evt.target.closest ? evt.target.closest('.nav-link') : evt.target)) : null;
+      let linkEl = null;
+      if (evt) {
+        linkEl = evt.currentTarget || null;
+        if (!linkEl && evt.target) {
+          linkEl = evt.target.closest ? evt.target.closest('.nav-link') : evt.target;
+        }
+      }
       if (linkEl && linkEl.classList) linkEl.classList.add('active');
 
       currentTab = tabName;
@@ -1017,8 +1023,14 @@
           const grupoSelect  = document.getElementById("grupoProd");
           if (unidadSelect) unidadSelect.innerHTML = "";
           if (grupoSelect)  grupoSelect.innerHTML  = "";
-          (data.unidades || []).forEach(u => unidadSelect && (unidadSelect.innerHTML += `<option value="${u}">${u}</option>`));
-          (data.grupos   || []).forEach(g => grupoSelect  && (grupoSelect.innerHTML  += `<option value="${g}">${g}</option>`));
+          if (unidadSelect) {
+            const uHtml = (data.unidades || []).map(u => `<option value="${u}">${u}</option>`).join('');
+            unidadSelect.innerHTML = uHtml;
+          }
+          if (grupoSelect) {
+            const gHtml = (data.grupos || []).map(g => `<option value="${g}">${g}</option>`).join('');
+            grupoSelect.innerHTML = gHtml;
+          }
         })
         .withFailureHandler(err => console.error('Error al cargar listas:', err))
         .obtenerListas();
@@ -1038,7 +1050,7 @@
         })
         .withFailureHandler(err => {
           const statsGrid = document.getElementById('statsGrid');
-          if (statsGrid) statsGrid.innerHTML = `<div class="message error">Error al cargar datos: ${err.message || err}</div>`;
+          if (statsGrid) statsGrid.innerHTML = '<div class="message error">Error al cargar datos del dashboard. Verifique la conexión.</div>';
           console.error('Error en loadDashboard:', err);
         })
         .obtenerResumen();
