@@ -519,7 +519,7 @@
               <div class="table-container" style="margin-top:15px;"><div id="tablaVentaDetalle"></div></div>
               <div style="margin-top:15px;"><label>Comentario</label><textarea id="checkVentaComentario" rows="2" style="width:100%;"></textarea></div>
               <div class="actions">
-                <button class="btn btn-success" id="btnMarcarSinSaldo" onclick="guardarCheckVentaUI(event)">✅ Marcar como SIN SALDO</button>
+                <button class="btn btn-success" id="btnMarcarSinSaldo" onclick="guardarCheckVentaModal(event)">✅ Marcar como SIN SALDO</button>
                 <button class="btn btn-secondary" onclick="cancelarCheckVenta()">Cancelar</button>
               </div>
             </div>
@@ -690,6 +690,68 @@
           <div style="text-align:center; margin-top:20px;">
             <a id="dcFotoLink" href="#" target="_blank" style="display:none; font-size:0.85rem; color:#2E86AB; margin-right:15px;">🔍 Ver foto completa ↗</a>
             <button onclick="cerrarDetalleClienteModal()" class="btn btn-secondary" style="padding:8px 20px;">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DETALLE VENTA (CHECK VENTAS) -->
+  <div id="ventaDetalleModal" style="display:none;">
+    <div class="modal-overlay" onclick="cerrarVentaDetalleModal()"></div>
+    <div class="modal-dialog" style="max-width:860px;">
+      <div style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:15px 20px; background:#2E86AB; color:white;">
+          <div style="font-weight:700; font-size:1.1rem;" id="ventaDetalleModalTitle">💰 Detalle de Venta</div>
+          <button onclick="cerrarVentaDetalleModal()" style="background:none; border:0; color:white; font-size:20px; cursor:pointer;">✖</button>
+        </div>
+        <div style="display:flex; border-bottom:2px solid #E5F2F7; background:#FAFBFC;">
+          <button id="ventaTabBtnDetalle" onclick="switchTabVenta('detalle')" style="padding:12px 24px; border:none; background:none; font-weight:600; color:#2E86AB; border-bottom:3px solid #2E86AB; cursor:pointer;">📋 Detalle de la Venta</button>
+          <button id="ventaTabBtnTransacciones" onclick="switchTabVenta('transacciones')" style="padding:12px 24px; border:none; background:none; font-weight:600; color:#6c757d; border-bottom:3px solid transparent; cursor:pointer;">💳 Transacciones</button>
+        </div>
+        <div style="padding:20px; max-height:72vh; overflow-y:auto;">
+          <!-- Tab: Detalle de la Venta -->
+          <div id="ventaTabDetalle">
+            <div id="modalResumenVenta"></div>
+            <div class="table-container" style="margin-top:15px;"><div id="modalTablaVentaDetalle"></div></div>
+            <div style="margin-top:15px;"><label style="font-weight:600; color:#2E86AB; font-size:0.9rem;">Comentario</label><textarea id="modalCheckVentaComentario" rows="2" style="width:100%; padding:10px; border:2px solid #E5F2F7; border-radius:8px; font-size:0.9rem; margin-top:6px;"></textarea></div>
+            <div class="actions" style="margin-top:12px;">
+              <button class="btn btn-success" id="modalBtnMarcarSinSaldo" onclick="guardarCheckVentaModal(event)">✅ Marcar como SIN SALDO</button>
+              <button class="btn btn-secondary" onclick="cerrarVentaDetalleModal()">Cerrar</button>
+            </div>
+            <div id="msgModalCheckVenta" style="margin-top:8px;"></div>
+          </div>
+          <!-- Tab: Transacciones -->
+          <div id="ventaTabTransacciones" style="display:none;">
+            <div id="tablaTransacciones"></div>
+            <div class="card" style="margin-top:20px; margin-bottom:0;">
+              <div class="card-header">➕ Registrar Depósito</div>
+              <div class="card-body">
+                <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
+                  <div class="form-group">
+                    <label>Tipo *</label>
+                    <select id="depositoTipo">
+                      <option value="Efectivo">Efectivo</option>
+                      <option value="Transferencia">Transferencia</option>
+                      <option value="Cheque">Cheque</option>
+                      <option value="Otro">Otro</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Monto *</label>
+                    <input id="depositoMonto" type="number" step="0.01" min="0.01" placeholder="0.00">
+                  </div>
+                  <div class="form-group">
+                    <label>Referencia / Nota</label>
+                    <input id="depositoComentario" type="text" placeholder="Número de transferencia, etc.">
+                  </div>
+                </div>
+                <div class="actions">
+                  <button class="btn btn-success" id="btnRegistrarDeposito" onclick="registrarDepositoUI(event)">💾 Registrar Depósito</button>
+                </div>
+                <div id="msgDeposito" style="margin-top:8px;"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -2114,6 +2176,7 @@
             <th>Cliente</th>
             <th>Items</th>
             <th>Total</th>
+            <th>Saldo</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
@@ -2132,6 +2195,15 @@
           { data: 'cliente', defaultContent: '-' },
           { data: 'lines', render: d => d ? d.length : 0 },
           { data: 'totalImporte', render: v => v > 0 ? '$' + v.toFixed(2) : '-' },
+          {
+            data: 'saldo',
+            render: function(v, type, row) {
+              if (row.estadoPago === 'SIN_SALDO') return '<span style="color:#28a745;font-weight:600;">$0.00</span>';
+              if (v === undefined || v === null) return '-';
+              const color = v > 0 ? '#dc3545' : '#28a745';
+              return `<span style="color:${color};font-weight:600;">$${v.toFixed(2)}</span>`;
+            }
+          },
           {
             data: null,
             render: function(data) {
@@ -2164,7 +2236,6 @@
       if (!buscado) { showMessage('msgCheckVenta', 'Ingrese un ID de venta', 'warning'); return; }
 
       ventaCargada = null;
-      document.getElementById('panelVenta').style.display = 'none';
       showMessage('msgCheckVenta', 'Buscando venta ' + buscado + '...', 'info');
 
       google.script.run.withSuccessHandler(res => {
@@ -2173,22 +2244,22 @@
           return;
         }
         ventaCargada = res;
-        renderVentaDetalle();
-        document.getElementById('panelVenta').style.display = 'block';
         document.getElementById('checkVentaBuscarId').value = buscado;
         showMessage('msgCheckVenta', `Venta ${buscado} cargada correctamente`, 'success');
-        document.getElementById('panelVenta').scrollIntoView({ behavior: 'smooth' });
+        abrirVentaDetalleModal();
       }).withFailureHandler(err => showMessage('msgCheckVenta', 'Error crítico: ' + err, 'error')).obtenerVentaPorId(buscado);
     }
 
     function renderVentaDetalle() {
-      const resDiv = document.getElementById('resumenVenta');
-      const tDiv = document.getElementById('tablaVentaDetalle');
-      const btnMarcar = document.getElementById('btnMarcarSinSaldo');
+      const resDiv = document.getElementById('modalResumenVenta');
+      const tDiv = document.getElementById('modalTablaVentaDetalle');
+      const btnMarcar = document.getElementById('modalBtnMarcarSinSaldo');
       if (!ventaCargada) return;
 
       const v = ventaCargada;
       const esSinSaldo = v.estadoPago === 'SIN_SALDO';
+      const saldoColor = (v.saldo > 0 && !esSinSaldo) ? '#dc3545' : '#28a745';
+      const saldoVal = esSinSaldo ? '$0.00' : (v.saldo !== undefined ? '$' + v.saldo.toFixed(2) : '-');
 
       resDiv.innerHTML = `<div style="background:#f0faf0;padding:15px;border-radius:8px;margin-bottom:15px;">
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">
@@ -2197,6 +2268,8 @@
           <div><strong>Fecha:</strong> ${v.fechaCaptura || '-'}</div>
           <div><strong>Obra:</strong> ${v.obra || '-'}</div>
           <div><strong>Total Venta:</strong> <span style="font-size:1.1em;font-weight:bold;">${v.totalImporte > 0 ? '$' + v.totalImporte.toFixed(2) : 'Sin importe registrado'}</span></div>
+          <div><strong>Depósitos:</strong> <span style="font-weight:bold;color:#17a2b8;">${v.totalDepositos !== undefined ? '$' + v.totalDepositos.toFixed(2) : '-'}</span></div>
+          <div><strong>Saldo:</strong> <span style="font-weight:bold;color:${saldoColor};">${saldoVal}</span></div>
           <div><strong>Estado:</strong> <span style="font-weight:bold;color:${esSinSaldo ? '#28a745' : '#dc3545'}">${esSinSaldo ? '✅ SIN SALDO' : '🔴 CON SALDO'}</span></div>
         </div>
       </div>`;
@@ -2229,37 +2302,144 @@
       }
     }
 
-    function guardarCheckVentaUI(event) {
+    function guardarCheckVentaModal(event) {
       if (!ventaCargada) return;
       const btn = event.target;
       btn.disabled = true; btn.textContent = 'Guardando...';
       const payload = {
         id: ventaCargada.id,
-        comentario: document.getElementById('checkVentaComentario').value
+        comentario: document.getElementById('modalCheckVentaComentario').value
       };
       google.script.run.withSuccessHandler(res => {
         btn.disabled = false;
         if (res.ok) {
           ventaCargada.estadoPago = 'SIN_SALDO';
+          ventaCargada.saldo = 0;
           renderVentaDetalle();
-          showMessage('msgCheckVenta', 'Venta marcada como SIN SALDO exitosamente.', 'success');
+          showMessage('msgModalCheckVenta', 'Venta marcada como SIN SALDO exitosamente.', 'success');
           listarVentas();
         } else {
           btn.textContent = '✅ Marcar como SIN SALDO';
-          showMessage('msgCheckVenta', 'Error: ' + res.errores.join(', '), 'error');
+          showMessage('msgModalCheckVenta', 'Error: ' + res.errores.join(', '), 'error');
         }
       }).withFailureHandler(err => {
         btn.disabled = false; btn.textContent = '✅ Marcar como SIN SALDO';
-        showMessage('msgCheckVenta', 'Error de red: ' + err, 'error');
+        showMessage('msgModalCheckVenta', 'Error de red: ' + err, 'error');
       }).guardarCheckVenta(payload);
+    }
+
+    function abrirVentaDetalleModal() {
+      if (!ventaCargada) return;
+      document.getElementById('modalCheckVentaComentario').value = '';
+      document.getElementById('msgModalCheckVenta').innerHTML = '';
+      document.getElementById('msgDeposito').innerHTML = '';
+      renderVentaDetalle();
+      renderTransacciones(ventaCargada.depositos || []);
+      switchTabVenta('detalle');
+      document.getElementById('ventaDetalleModalTitle').textContent = '💰 Venta: ' + ventaCargada.id;
+      document.getElementById('ventaDetalleModal').style.display = 'block';
+    }
+
+    function cerrarVentaDetalleModal() {
+      document.getElementById('ventaDetalleModal').style.display = 'none';
+      ventaCargada = null;
+    }
+
+    function switchTabVenta(tab) {
+      const isDetalle = tab === 'detalle';
+      document.getElementById('ventaTabDetalle').style.display = isDetalle ? 'block' : 'none';
+      document.getElementById('ventaTabTransacciones').style.display = isDetalle ? 'none' : 'block';
+      const btnD = document.getElementById('ventaTabBtnDetalle');
+      const btnT = document.getElementById('ventaTabBtnTransacciones');
+      btnD.style.color = isDetalle ? '#2E86AB' : '#6c757d';
+      btnD.style.borderBottom = isDetalle ? '3px solid #2E86AB' : '3px solid transparent';
+      btnT.style.color = isDetalle ? '#6c757d' : '#2E86AB';
+      btnT.style.borderBottom = isDetalle ? '3px solid transparent' : '3px solid #2E86AB';
+    }
+
+    function getSaldoPendienteHtml() {
+      if (!ventaCargada) return '-';
+      if (ventaCargada.estadoPago === 'SIN_SALDO') {
+        return '<strong>Saldo pendiente:</strong> <span style="color:#28a745;font-weight:700;font-size:1.1em;">$0.00 ✅</span>';
+      }
+      const saldo = ventaCargada.saldo || 0;
+      if (saldo <= 0) {
+        return '<strong>Saldo pendiente:</strong> <span style="color:#28a745;font-weight:700;font-size:1.1em;">$0.00</span> <small style="color:#ffc107;font-weight:600;">(pendiente de marcar SIN SALDO)</small>';
+      }
+      return `<strong>Saldo pendiente:</strong> <span style="color:#dc3545;font-weight:700;font-size:1.1em;">$${saldo.toFixed(2)}</span>`;
+    }
+
+    function renderTransacciones(depositos) {
+      const container = document.getElementById('tablaTransacciones');
+      if (!container) return;
+      if (!depositos || depositos.length === 0) {
+        container.innerHTML = `
+          <div style="background:#e8f4f8;padding:12px 15px;border-radius:8px;margin-bottom:12px;">
+            ${getSaldoPendienteHtml()}
+          </div>
+          <div class="message info">No hay depósitos registrados para esta venta.</div>`;
+        return;
+      }
+      const totalDep = depositos.reduce((s, d) => s + d.monto, 0);
+      let rows = depositos.map((d, i) => `<tr>
+        <td>${i + 1}</td>
+        <td>${d.fecha}</td>
+        <td style="text-align:right;font-weight:600;color:#17a2b8;">$${d.monto.toFixed(2)}</td>
+        <td><span class="badge badge-pend">${d.tipo}</span></td>
+        <td>${d.comentario || '-'}</td>
+        <td style="font-size:0.8em;color:#6c757d;">${d.usuario}</td>
+      </tr>`).join('');
+      container.innerHTML = `
+        <div style="background:#e8f4f8;padding:12px 15px;border-radius:8px;margin-bottom:12px;display:flex;gap:30px;align-items:center;flex-wrap:wrap;">
+          <div><strong>Total depositado:</strong> <span style="color:#17a2b8;font-weight:700;font-size:1.1em;">$${totalDep.toFixed(2)}</span></div>
+          <div>${getSaldoPendienteHtml()}</div>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead><tr><th>#</th><th>Fecha</th><th>Monto</th><th>Tipo</th><th>Referencia</th><th>Usuario</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    function registrarDepositoUI(event) {
+      if (!ventaCargada) return;
+      const btn = event.target;
+      const monto = parseFloat(document.getElementById('depositoMonto').value);
+      const tipo = document.getElementById('depositoTipo').value;
+      const comentario = document.getElementById('depositoComentario').value.trim();
+      if (!monto || monto <= 0) { showMessage('msgDeposito', 'Ingrese un monto válido mayor a cero.', 'warning'); return; }
+
+      btn.disabled = true; btn.textContent = 'Guardando...';
+      const payload = { ventaId: ventaCargada.id, monto, tipo, comentario };
+
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false; btn.textContent = '💾 Registrar Depósito';
+        if (res.ok) {
+          showMessage('msgDeposito', 'Depósito registrado exitosamente.', 'success');
+          document.getElementById('depositoMonto').value = '';
+          document.getElementById('depositoComentario').value = '';
+          google.script.run.withSuccessHandler(venta => {
+            if (venta) {
+              ventaCargada = venta;
+              renderVentaDetalle();
+              renderTransacciones(ventaCargada.depositos || []);
+            }
+          }).obtenerVentaPorId(ventaCargada.id);
+          listarVentas();
+        } else {
+          showMessage('msgDeposito', 'Error: ' + (res.error || 'desconocido'), 'error');
+        }
+      }).withFailureHandler(err => {
+        btn.disabled = false; btn.textContent = '💾 Registrar Depósito';
+        showMessage('msgDeposito', 'Error de red: ' + err, 'error');
+      }).registrarDeposito(payload);
     }
 
     function cancelarCheckVenta() {
       if (confirm("¿Seguro que desea cancelar?")) {
-        document.getElementById('panelVenta').style.display = 'none';
-        ventaCargada = null;
+        cerrarVentaDetalleModal();
         document.getElementById('checkVentaBuscarId').value = '';
-        document.getElementById('checkVentaComentario').value = '';
       }
     }
 

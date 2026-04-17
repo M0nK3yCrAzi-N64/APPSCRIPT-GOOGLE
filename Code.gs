@@ -1071,6 +1071,7 @@ function debugValidarRentaToSheet(id) {
 
 /* ------------------- CHECK DE VENTAS (CORE) ------------------- */
 const HOJA_CHECKS_VENTAS = "CHECKS_VENTAS";
+const HOJA_DEPOSITOS = "DEPOSITOS";
 
 function esTipoVentaFlexible(tipo) {
   const t = normalizarTipoMovimiento(tipo);
@@ -1116,6 +1117,9 @@ function obtenerVentaPorId(id) {
     const clienteClave = String(cab[2] || '').toUpperCase();
     const clienteNombre = mapaClientes[clienteClave] || cab[2] || '';
     const estadoPago = calcularEstadoVenta(idUpper);
+    const depositos = obtenerDepositosPorVenta(idUpper);
+    const totalDepositos = Number(depositos.reduce((s, d) => s + d.monto, 0).toFixed(2));
+    const totalImporteRedondeado = Number(totalImporte.toFixed(2));
 
     return {
       id: cab[0],
@@ -1127,7 +1131,10 @@ function obtenerVentaPorId(id) {
       remision: cab[5],
       tipo: cab[6],
       lineas,
-      totalImporte: Number(totalImporte.toFixed(2)),
+      totalImporte: totalImporteRedondeado,
+      totalDepositos,
+      saldo: _calcularSaldo_(totalImporteRedondeado, totalDepositos),
+      depositos,
       estadoPago
     };
   } catch (e) {
@@ -1186,6 +1193,85 @@ function guardarCheckVenta(payload) {
   }
 }
 
+/* ------------------- DEPÓSITOS DE VENTAS ------------------- */
+
+function _asegurarHojaDepositos_(ss) {
+  let sheet = ss.getSheetByName(HOJA_DEPOSITOS);
+  if (!sheet) {
+    sheet = ss.insertSheet(HOJA_DEPOSITOS);
+    sheet.getRange(1, 1, 1, 6).setValues([['VENTA_ID', 'Fecha', 'Monto', 'Tipo', 'Comentario', 'Usuario']]);
+  }
+  return sheet;
+}
+
+function registrarDeposito(payload) {
+  let lock;
+  try {
+    if (!payload || !payload.ventaId || !payload.monto || !payload.tipo) {
+      return { ok: false, error: 'Datos incompletos' };
+    }
+    const monto = parseFloat(payload.monto);
+    if (isNaN(monto) || monto <= 0) return { ok: false, error: 'Monto inválido' };
+
+    lock = LockService.getScriptLock();
+    if (!lock.tryLock(20000)) return { ok: false, error: 'Sistema ocupado' };
+
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = _asegurarHojaDepositos_(ss);
+    const user = Session.getActiveUser().getEmail() || 'Sistema';
+    sheet.appendRow([
+      String(payload.ventaId).toUpperCase(),
+      new Date(),
+      monto,
+      String(payload.tipo),
+      String(payload.comentario || ''),
+      user
+    ]);
+    return { ok: true };
+  } catch (e) {
+    console.error('registrarDeposito:', e);
+    return { ok: false, error: e.message };
+  } finally {
+    if (lock) { try { lock.releaseLock(); } catch (e) {} }
+  }
+}
+
+function obtenerDepositosPorVenta(ventaId) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(HOJA_DEPOSITOS);
+    if (!sheet || sheet.getLastRow() < 2) return [];
+    const idUpper = String(ventaId).trim().toUpperCase();
+    const data = sheet.getDataRange().getValues().slice(1);
+    return data
+      .filter(r => String(r[0] || '').trim().toUpperCase() === idUpper)
+      .map(r => ({
+        ventaId: r[0],
+        fecha: r[1] ? formatearFecha(r[1]) : '',
+        monto: parseFloat(r[2]) || 0,
+        tipo: String(r[3] || ''),
+        comentario: String(r[4] || ''),
+        usuario: String(r[5] || '')
+      }));
+  } catch (e) { return []; }
+}
+
+function _calcularSaldo_(totalImporte, totalDepositos) {
+  return Number(Math.max(0, totalImporte - totalDepositos).toFixed(2));
+}
+
+function _calcularTotalDepositos_(ss, ventaId) {
+  try {
+    const sheet = ss.getSheetByName(HOJA_DEPOSITOS);
+    if (!sheet || sheet.getLastRow() < 2) return 0;
+    const idUpper = String(ventaId).trim().toUpperCase();
+    const data = sheet.getDataRange().getValues().slice(1);
+    return data
+      .filter(r => String(r[0] || '').trim().toUpperCase() === idUpper)
+      .reduce((sum, r) => sum + (parseFloat(r[2]) || 0), 0);
+  } catch (e) { return 0; }
+}
+
 function listarVentasPorEstado(estado) {
   try {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -1242,6 +1328,9 @@ function listarVentasPorEstado(estado) {
     for (const [id, venta] of ventas) {
       venta.totalImporte = Number(venta.totalImporte.toFixed(2));
       venta.estadoPago = liquidadas.has(id) ? 'SIN_SALDO' : 'CON_SALDO';
+      const totalDepositos = Number(_calcularTotalDepositos_(ss, id).toFixed(2));
+      venta.totalDepositos = totalDepositos;
+      venta.saldo = _calcularSaldo_(venta.totalImporte, totalDepositos);
       let incluir = false;
       if (!estado || estado === 'TODAS') incluir = true;
       else if (estado === 'CON_SALDO') incluir = (venta.estadoPago === 'CON_SALDO');
