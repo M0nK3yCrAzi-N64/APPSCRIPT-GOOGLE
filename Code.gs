@@ -1069,6 +1069,189 @@ function debugValidarRentaToSheet(id) {
   }
 }
 
+/* ------------------- CHECK DE VENTAS (CORE) ------------------- */
+const HOJA_CHECKS_VENTAS = "CHECKS_VENTAS";
+
+function esTipoVentaFlexible(tipo) {
+  const t = normalizarTipoMovimiento(tipo);
+  return t === TIPOS_MOVIMIENTO.SALIDA_VENTA;
+}
+
+function obtenerVentaPorId(id) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const caja = ss.getSheetByName(HOJA_CAJA);
+    if (!caja || caja.getLastRow() < 2) throw new Error('No hay registros en Caja');
+
+    const prodMap = obtenerMapaProductosPorCodigo();
+    const data = caja.getDataRange().getValues().slice(1);
+    const idUpper = String(id).trim().toUpperCase();
+
+    const filas = data.filter(r => {
+      const rid = String(r[0] || '').trim().toUpperCase();
+      const tipo = normalizarTipoMovimiento(r[6] || '');
+      return esTipoVentaFlexible(tipo) && (rid === idUpper);
+    });
+
+    if (!filas.length) return null;
+
+    const lineas = filas.map(f => {
+      const codigo = String(f[7] || '').toUpperCase();
+      const cantidad = parseFloat(f[8]) || 0;
+      const precioUnit = parseFloat(f[14]) || 0;
+      const importeLinea = parseFloat(f[18]) || 0;
+      return {
+        codigo,
+        nombre: prodMap[codigo] || obtenerNombreProducto(codigo),
+        cantidad,
+        precioUnit,
+        importeLinea,
+        kitCodigo: String(f[13] || '').trim()
+      };
+    });
+
+    const totalImporte = lineas.reduce((s, l) => s + l.importeLinea, 0);
+    const cab = filas[0];
+    const mapaClientes = obtenerMapaClientesPorClave();
+    const clienteClave = String(cab[2] || '').toUpperCase();
+    const clienteNombre = mapaClientes[clienteClave] || cab[2] || '';
+    const estadoPago = calcularEstadoVenta(idUpper);
+
+    return {
+      id: cab[0],
+      fechaCaptura: cab[1] ? formatearFecha(cab[1]) : '',
+      cliente: clienteNombre,
+      clienteClave,
+      agente: cab[3],
+      obra: cab[4],
+      remision: cab[5],
+      tipo: cab[6],
+      lineas,
+      totalImporte: Number(totalImporte.toFixed(2)),
+      estadoPago
+    };
+  } catch (e) {
+    console.error('obtenerVentaPorId Error:', e);
+    throw e.message;
+  }
+}
+
+function calcularEstadoVenta(id) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const checksSheet = ss.getSheetByName(HOJA_CHECKS_VENTAS);
+    if (!checksSheet || checksSheet.getLastRow() < 2) return 'CON_SALDO';
+    const idUpper = String(id).trim().toUpperCase();
+    const data = checksSheet.getDataRange().getValues().slice(1);
+    for (let i = 0; i < data.length; i++) {
+      if (String(data[i][0] || '').trim().toUpperCase() === idUpper) return 'SIN_SALDO';
+    }
+    return 'CON_SALDO';
+  } catch (e) { return 'CON_SALDO'; }
+}
+
+function guardarCheckVenta(payload) {
+  let lock;
+  try {
+    if (!payload || !payload.id) return { ok: false, errores: ['Payload inválido'] };
+    const id = String(payload.id).toUpperCase();
+    lock = LockService.getScriptLock();
+    if (!lock.tryLock(20000)) return { ok: false, errores: ['Sistema ocupado'] };
+
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let checksSheet = ss.getSheetByName(HOJA_CHECKS_VENTAS);
+    if (!checksSheet) {
+      checksSheet = ss.insertSheet(HOJA_CHECKS_VENTAS);
+      checksSheet.getRange(1, 1, 1, 4).setValues([['IDREGISTRO', 'Fecha', 'Usuario', 'Comentario']]);
+    }
+
+    if (checksSheet.getLastRow() >= 2) {
+      const existing = checksSheet.getDataRange().getValues().slice(1);
+      for (let i = 0; i < existing.length; i++) {
+        if (String(existing[i][0] || '').trim().toUpperCase() === id) {
+          return { ok: false, errores: ['Esta venta ya fue marcada como SIN SALDO.'] };
+        }
+      }
+    }
+
+    const hoy = new Date();
+    const user = Session.getActiveUser().getEmail() || 'Sistema';
+    checksSheet.appendRow([id, hoy, user, payload.comentario || '']);
+    return { ok: true };
+  } catch (e) {
+    console.error('guardarCheckVenta:', e);
+    return { ok: false, errores: [e.message] };
+  } finally {
+    if (lock) { try { lock.releaseLock(); } catch (e) {} }
+  }
+}
+
+function listarVentasPorEstado(estado) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const caja = ss.getSheetByName(HOJA_CAJA);
+    if (!caja || caja.getLastRow() < 2) return [];
+
+    const prodMap = obtenerMapaProductosPorCodigo();
+    const data = caja.getDataRange().getValues().slice(1);
+    const mapaClientes = obtenerMapaClientesPorClave();
+    const ventas = new Map();
+
+    data.forEach(r => {
+      const id = String(r[0] || '').trim().toUpperCase();
+      const tipo = normalizarTipoMovimiento(r[6] || '');
+      if (!esTipoVentaFlexible(tipo)) return;
+
+      const clienteClave = String(r[2] || '').toUpperCase();
+      const clienteNombre = mapaClientes[clienteClave] || r[2] || '';
+
+      if (!ventas.has(id)) {
+        ventas.set(id, {
+          id,
+          cliente: clienteNombre,
+          clienteClave,
+          agente: r[3],
+          fechaCaptura: r[1] ? formatearFecha(r[1]) : '',
+          lines: [],
+          totalImporte: 0
+        });
+      }
+
+      const ventaActual = ventas.get(id);
+      const codigoProd = String(r[7]).toUpperCase();
+      const importeLinea = parseFloat(r[18]) || 0;
+      ventaActual.totalImporte += importeLinea;
+      ventaActual.lines.push({
+        codigo: codigoProd,
+        nombre: prodMap[codigoProd] || obtenerNombreProducto(codigoProd),
+        cantidad: parseFloat(r[8]) || 0,
+        importeLinea
+      });
+    });
+
+    const liquidadas = new Set();
+    const checksSheet = ss.getSheetByName(HOJA_CHECKS_VENTAS);
+    if (checksSheet && checksSheet.getLastRow() >= 2) {
+      checksSheet.getDataRange().getValues().slice(1).forEach(r => {
+        const idCheck = String(r[0] || '').trim().toUpperCase();
+        if (idCheck) liquidadas.add(idCheck);
+      });
+    }
+
+    const result = [];
+    for (const [id, venta] of ventas) {
+      venta.totalImporte = Number(venta.totalImporte.toFixed(2));
+      venta.estadoPago = liquidadas.has(id) ? 'SIN_SALDO' : 'CON_SALDO';
+      let incluir = false;
+      if (!estado || estado === 'TODAS') incluir = true;
+      else if (estado === 'CON_SALDO') incluir = (venta.estadoPago === 'CON_SALDO');
+      else if (estado === 'SIN_SALDO') incluir = (venta.estadoPago === 'SIN_SALDO');
+      if (incluir) result.push(venta);
+    }
+    return result;
+  } catch (e) { return []; }
+}
+
 /* ------------------- PARAMETROS (CON LOGO) ------------------- */
 function _asegurarHojaParametros_() {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);

@@ -169,6 +169,7 @@
         <li class="nav-item"><a class="nav-link" onclick="showTab('productos', event)"><span class="nav-icon">📦</span>Nuevo producto</a></li>
         <li class="nav-item"><a class="nav-link" onclick="showTab('kits', event)"><span class="nav-icon">🧩</span>Kits</a></li>
         <li class="nav-item"><a class="nav-link" onclick="showTab('checkRentas', event)"><span class="nav-icon">✅</span>Check de Rentas</a></li>
+        <li class="nav-item"><a class="nav-link" onclick="showTab('checkVentas', event)"><span class="nav-icon">💰</span>Check de Ventas</a></li>
         <li class="nav-item"><a class="nav-link" onclick="showTab('movimientos', event)"><span class="nav-icon">📋</span>Movimientos</a></li>
         <li class="nav-item"><a class="nav-link" onclick="showTab('inventario', event)"><span class="nav-icon">📊</span>Inventario</a></li>
         <li class="nav-item"><a class="nav-link" onclick="showTab('reportes', event)"><span class="nav-icon">📈</span>Reportes</a></li>
@@ -485,6 +486,47 @@
         </div>
       </div>
 
+      <!-- Check de Ventas -->
+      <div id="checkVentas" class="tab-content">
+        <div class="content-header"><h2>Check de Ventas</h2></div>
+        <div class="content-body">
+          <div class="card">
+            <div class="card-header">Buscar y listar ventas</div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="form-group"><label>Buscar por ID</label><input id="checkVentaBuscarId" type="text" placeholder="Ej. VENT01"></div>
+                <div class="form-group">
+                  <label>Filtrar por estado</label>
+                  <select id="filtroEstadoVenta" onchange="listarVentas()">
+                    <option value="CON_SALDO" selected>Con Saldo (Pendiente)</option>
+                    <option value="SIN_SALDO">Sin Saldo (Liquidadas)</option>
+                    <option value="TODAS">Todas</option>
+                  </select>
+                </div>
+              </div>
+              <div class="actions">
+                <button class="btn btn-primary" onclick="listarVentas()">🔄 Actualizar lista</button>
+                <button class="btn btn-info" onclick="cargarVentaPorId()">Cargar por ID</button>
+              </div>
+              <div id="msgCheckVenta"></div>
+              <div class="table-container" style="margin-top: 15px;"><div id="tablaVentas"></div></div>
+            </div>
+          </div>
+          <div class="card" id="panelVenta" style="display:none;">
+            <div class="card-header">Detalle de venta</div>
+            <div class="card-body">
+              <div id="resumenVenta"></div>
+              <div class="table-container" style="margin-top:15px;"><div id="tablaVentaDetalle"></div></div>
+              <div style="margin-top:15px;"><label>Comentario</label><textarea id="checkVentaComentario" rows="2" style="width:100%;"></textarea></div>
+              <div class="actions">
+                <button class="btn btn-success" id="btnMarcarSinSaldo" onclick="guardarCheckVentaUI(event)">✅ Marcar como SIN SALDO</button>
+                <button class="btn btn-secondary" onclick="cancelarCheckVenta()">Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Configuración -->
       <div id="configuracion" class="tab-content">
         <div class="content-header"><h2>Configuración del Sistema</h2></div>
@@ -676,6 +718,7 @@
     let kitsMap = {};
     let rentaCargada = null;
     let lineasCheck = [];
+    let ventaCargada = null;
     let borradoresMov = [];
     let autocompleteTimeout;
     let productosCaja = [];
@@ -743,6 +786,7 @@
 
       currentTab = tabName;
       if(tabName === 'checkRentas') listarRentas();
+      if(tabName === 'checkVentas') listarVentas();
       if(tabName === 'clientes' && todosLosClientes.length === 0) mostrarClientes();
       if(tabName === 'dashboard') loadDashboard();
       if(tabName === 'kits') { if(!editandoKit) cargarKitCodigo(); cargarKits(); }
@@ -2007,6 +2051,216 @@
         if (res.ok) { showMessage('msgCheck', 'Check guardado exitosamente.', 'success'); document.getElementById('panelRenta').style.display = 'none'; listarRentas(); }
         else { showMessage('msgCheck', 'Error al guardar: ' + res.errores.join(', '), 'error'); }
       }).withFailureHandler(err => { btn.disabled = false; btn.textContent = 'Guardar check'; showMessage('msgCheck', 'Error de red: ' + err, 'error'); }).guardarCheckRenta(payload);
+    }
+
+    /* ------------------- CHECK VENTAS ------------------- */
+    function listarVentas() {
+      const estado = document.getElementById('filtroEstadoVenta').value;
+      google.script.run.withSuccessHandler(res => {
+        renderTablaVentas(res || []);
+      }).withFailureHandler(err => showMessage('msgCheckVenta', 'Error al listar: ' + err, 'error'))
+      .listarVentasPorEstado(estado);
+    }
+
+    function formatChildVenta(d) {
+      let rowsHtml = '';
+      if (d.lines && d.lines.length > 0) {
+        d.lines.forEach(l => {
+          rowsHtml += `
+            <tr>
+              <td>${l.codigo}</td>
+              <td>${l.nombre}</td>
+              <td style="text-align:center">${l.cantidad}</td>
+              <td style="text-align:right">${l.importeLinea > 0 ? '$' + l.importeLinea.toFixed(2) : '-'}</td>
+            </tr>
+          `;
+        });
+      } else {
+        rowsHtml = '<tr><td colspan="4">No hay detalles disponibles</td></tr>';
+      }
+      return `
+        <div style="padding:10px; background:#f9f9f9; border-left:4px solid #28a745;">
+          <div style="margin-bottom:8px; font-weight:600; color:#333;">
+            ID: ${d.clienteClave} &nbsp;&nbsp; ${d.cliente}
+          </div>
+          <div style="margin-bottom:12px; color:#555;">
+            Agente: ${d.agente || 'N/A'} &nbsp;&nbsp; Fecha: ${d.fechaCaptura || '-'}
+          </div>
+          <table style="width:100%; font-size:0.9em; border:1px solid #ddd;">
+            <thead style="background:#e9ecef;">
+              <tr>
+                <th>Clave</th>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Importe</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderTablaVentas(data) {
+      const container = document.getElementById('tablaVentas');
+      if (!container) return;
+      if (!data || data.length === 0) { container.innerHTML = '<div class="message info">No hay ventas registradas con el filtro seleccionado</div>'; return; }
+
+      container.innerHTML = `<table id="tablaVentasTable" class="display" style="width:100%">
+        <thead>
+          <tr>
+            <th></th>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>`;
+
+      if ($.fn.DataTable.isDataTable('#tablaVentasTable')) { $('#tablaVentasTable').DataTable().destroy(); }
+
+      var table = $('#tablaVentasTable').DataTable({
+        data: data,
+        stateSave: true,
+        columns: [
+          { className: 'details-control-venta', orderable: false, data: null, defaultContent: '➕', width: '30px' },
+          { data: 'id' },
+          { data: 'cliente', defaultContent: '-' },
+          { data: 'lines', render: d => d ? d.length : 0 },
+          { data: 'totalImporte', render: v => v > 0 ? '$' + v.toFixed(2) : '-' },
+          {
+            data: null,
+            render: function(data) {
+              if (data.estadoPago === 'SIN_SALDO') return '<span class="badge badge-ok">✅ Sin Saldo</span>';
+              return '<span class="badge badge-act">🔴 Con Saldo</span>';
+            }
+          },
+          {
+            data: null,
+            render: function(data, type, row) {
+              return `<button class="btn btn-info" style="padding:4px 8px;font-size:0.8rem" onclick="cargarVentaDirecta('${row.id}')">Cargar</button>`;
+            }
+          }
+        ],
+        order: [[1, 'asc']]
+      });
+
+      $('#tablaVentasTable tbody').off('click', 'td.details-control-venta').on('click', 'td.details-control-venta', function () {
+        var tr = $(this).closest('tr');
+        var row = table.row(tr);
+        if (row.child.isShown()) { row.child.hide(); tr.removeClass('shown'); $(this).text('➕'); }
+        else { row.child(formatChildVenta(row.data())).show(); tr.addClass('shown'); $(this).text('➖'); }
+      });
+    }
+
+    function cargarVentaPorId() { const id = document.getElementById('checkVentaBuscarId').value.trim(); cargarVentaDirecta(id); }
+
+    function cargarVentaDirecta(id) {
+      const buscado = (id || '').toString().trim().toUpperCase();
+      if (!buscado) { showMessage('msgCheckVenta', 'Ingrese un ID de venta', 'warning'); return; }
+
+      ventaCargada = null;
+      document.getElementById('panelVenta').style.display = 'none';
+      showMessage('msgCheckVenta', 'Buscando venta ' + buscado + '...', 'info');
+
+      google.script.run.withSuccessHandler(res => {
+        if (!res || !res.lineas || !res.lineas.length) {
+          showMessage('msgCheckVenta', `No se encontró la venta <strong>${buscado}</strong>.`, 'error');
+          return;
+        }
+        ventaCargada = res;
+        renderVentaDetalle();
+        document.getElementById('panelVenta').style.display = 'block';
+        document.getElementById('checkVentaBuscarId').value = buscado;
+        showMessage('msgCheckVenta', `Venta ${buscado} cargada correctamente`, 'success');
+        document.getElementById('panelVenta').scrollIntoView({ behavior: 'smooth' });
+      }).withFailureHandler(err => showMessage('msgCheckVenta', 'Error crítico: ' + err, 'error')).obtenerVentaPorId(buscado);
+    }
+
+    function renderVentaDetalle() {
+      const resDiv = document.getElementById('resumenVenta');
+      const tDiv = document.getElementById('tablaVentaDetalle');
+      const btnMarcar = document.getElementById('btnMarcarSinSaldo');
+      if (!ventaCargada) return;
+
+      const v = ventaCargada;
+      const esSinSaldo = v.estadoPago === 'SIN_SALDO';
+
+      resDiv.innerHTML = `<div style="background:#f0faf0;padding:15px;border-radius:8px;margin-bottom:15px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">
+          <div><strong>ID:</strong> ${v.id}</div>
+          <div><strong>Cliente:</strong> ${v.cliente || '-'}</div>
+          <div><strong>Fecha:</strong> ${v.fechaCaptura || '-'}</div>
+          <div><strong>Obra:</strong> ${v.obra || '-'}</div>
+          <div><strong>Total Venta:</strong> <span style="font-size:1.1em;font-weight:bold;">${v.totalImporte > 0 ? '$' + v.totalImporte.toFixed(2) : 'Sin importe registrado'}</span></div>
+          <div><strong>Estado:</strong> <span style="font-weight:bold;color:${esSinSaldo ? '#28a745' : '#dc3545'}">${esSinSaldo ? '✅ SIN SALDO' : '🔴 CON SALDO'}</span></div>
+        </div>
+      </div>`;
+
+      let html = `<table><thead><tr><th>#</th><th>Producto</th><th>Cantidad</th><th>Precio Unit.</th><th>Importe</th></tr></thead><tbody>`;
+      v.lineas.forEach((l, i) => {
+        html += `<tr>
+          <td>${i + 1}</td>
+          <td><strong>${l.codigo}</strong><br><span style="font-size:0.8em;color:#666">${l.nombre || ''}</span>${l.kitCodigo ? `<br><span class="badge badge-kit">Kit ${l.kitCodigo}</span>` : ''}</td>
+          <td style="text-align:center;">${l.cantidad}</td>
+          <td style="text-align:right;">${l.precioUnit > 0 ? '$' + l.precioUnit.toFixed(2) : '-'}</td>
+          <td style="text-align:right;">${l.importeLinea > 0 ? '$' + l.importeLinea.toFixed(2) : '-'}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      tDiv.innerHTML = html;
+
+      if (btnMarcar) {
+        if (esSinSaldo) {
+          btnMarcar.disabled = true;
+          btnMarcar.textContent = '✅ Ya está SIN SALDO';
+          btnMarcar.style.opacity = '0.6';
+          btnMarcar.style.cursor = 'not-allowed';
+        } else {
+          btnMarcar.disabled = false;
+          btnMarcar.textContent = '✅ Marcar como SIN SALDO';
+          btnMarcar.style.opacity = '1';
+          btnMarcar.style.cursor = 'pointer';
+        }
+      }
+    }
+
+    function guardarCheckVentaUI(event) {
+      if (!ventaCargada) return;
+      const btn = event.target;
+      btn.disabled = true; btn.textContent = 'Guardando...';
+      const payload = {
+        id: ventaCargada.id,
+        comentario: document.getElementById('checkVentaComentario').value
+      };
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false;
+        if (res.ok) {
+          ventaCargada.estadoPago = 'SIN_SALDO';
+          renderVentaDetalle();
+          showMessage('msgCheckVenta', 'Venta marcada como SIN SALDO exitosamente.', 'success');
+          listarVentas();
+        } else {
+          btn.textContent = '✅ Marcar como SIN SALDO';
+          showMessage('msgCheckVenta', 'Error: ' + res.errores.join(', '), 'error');
+        }
+      }).withFailureHandler(err => {
+        btn.disabled = false; btn.textContent = '✅ Marcar como SIN SALDO';
+        showMessage('msgCheckVenta', 'Error de red: ' + err, 'error');
+      }).guardarCheckVenta(payload);
+    }
+
+    function cancelarCheckVenta() {
+      if (confirm("¿Seguro que desea cancelar?")) {
+        document.getElementById('panelVenta').style.display = 'none';
+        ventaCargada = null;
+        document.getElementById('checkVentaBuscarId').value = '';
+        document.getElementById('checkVentaComentario').value = '';
+      }
     }
 
     /* ------------------- IMPRESIÓN (USANDO PARAMETROS) ------------------- */
