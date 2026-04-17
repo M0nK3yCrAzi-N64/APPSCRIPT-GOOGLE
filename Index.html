@@ -164,19 +164,19 @@
       </div>
 
       <ul class="nav-menu">
-        <li class="nav-item"><a class="nav-link active" onclick="showTab('dashboard', event)"><span class="nav-icon">📊</span>Dashboard</a></li>
-        <li class="nav-item"><a class="nav-link" onclick="showTab('clientes', event)"><span class="nav-icon">👤</span>Clientes</a></li>
-        <li class="nav-item"><a class="nav-link" onclick="showTab('productos', event)"><span class="nav-icon">📦</span>Nuevo producto</a></li>
-        <li class="nav-item"><a class="nav-link" onclick="showTab('kits', event)"><span class="nav-icon">🧩</span>Kits</a></li>
-        <li class="nav-item"><a class="nav-link" onclick="showTab('checkRentas', event)"><span class="nav-icon">✅</span>Check de Rentas</a></li>
-        <li class="nav-item"><a class="nav-link" onclick="showTab('checkVentas', event)"><span class="nav-icon">💰</span>Check de Ventas</a></li>
-        <li class="nav-item"><a class="nav-link" onclick="showTab('depositos', event)"><span class="nav-icon">💳</span>Depósitos</a></li>
-        <li class="nav-item"><a class="nav-link" onclick="showTab('movimientos', event)"><span class="nav-icon">📋</span>Movimientos</a></li>
-        <li class="nav-item"><a class="nav-link" onclick="showTab('inventario', event)"><span class="nav-icon">📊</span>Inventario</a></li>
-        <li class="nav-item"><a class="nav-link" onclick="showTab('reportes', event)"><span class="nav-icon">📈</span>Reportes</a></li>
-        <li class="nav-item"><a class="nav-link" onclick="showTab('caja', event)"><span class="nav-icon">🧾</span>Caja Registradora</a></li>
-        <li class="nav-item"><a class="nav-link" onclick="abrirParametrosModal()"><span class="nav-icon">🏢</span> Parámetros</a></li>
-        <li class="nav-item"><a class="nav-link" onclick="showTab('configuracion', event)"><span class="nav-icon">⚙️</span>Configuración</a></li>
+        <li class="nav-item"><a class="nav-link active" data-tab="dashboard"><span class="nav-icon">📊</span>Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" data-tab="clientes"><span class="nav-icon">👤</span>Clientes</a></li>
+        <li class="nav-item"><a class="nav-link" data-tab="productos"><span class="nav-icon">📦</span>Nuevo producto</a></li>
+        <li class="nav-item"><a class="nav-link" data-tab="kits"><span class="nav-icon">🧩</span>Kits</a></li>
+        <li class="nav-item"><a class="nav-link" data-tab="checkRentas"><span class="nav-icon">✅</span>Check de Rentas</a></li>
+        <li class="nav-item"><a class="nav-link" data-tab="checkVentas"><span class="nav-icon">💰</span>Check de Ventas</a></li>
+        <li class="nav-item"><a class="nav-link" data-tab="depositos"><span class="nav-icon">💳</span>Depósitos</a></li>
+        <li class="nav-item"><a class="nav-link" data-tab="movimientos"><span class="nav-icon">📋</span>Movimientos</a></li>
+        <li class="nav-item"><a class="nav-link" data-tab="inventario"><span class="nav-icon">📊</span>Inventario</a></li>
+        <li class="nav-item"><a class="nav-link" data-tab="reportes"><span class="nav-icon">📈</span>Reportes</a></li>
+        <li class="nav-item"><a class="nav-link" data-tab="caja"><span class="nav-icon">🧾</span>Caja Registradora</a></li>
+        <li class="nav-item"><a class="nav-link" data-action="parametros"><span class="nav-icon">🏢</span> Parámetros</a></li>
+        <li class="nav-item"><a class="nav-link" data-tab="configuracion"><span class="nav-icon">⚙️</span>Configuración</a></li>
       </ul>
     </nav>
 
@@ -938,6 +938,18 @@
 
     // Logo selección
     let logoSeleccionado = null;
+
+    // Attach nav-link click handlers via addEventListener to avoid GAS sandbox scope issues
+    document.querySelectorAll('.nav-link[data-tab]').forEach(function(link) {
+      link.addEventListener('click', function(e) {
+        showTab(this.getAttribute('data-tab'), e);
+      });
+    });
+    document.querySelectorAll('.nav-link[data-action="parametros"]').forEach(function(link) {
+      link.addEventListener('click', function() {
+        abrirParametrosModal();
+      });
+    });
 
     function initializeApp() {
       cargarParametrosParaUI();
