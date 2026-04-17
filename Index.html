@@ -199,50 +199,11 @@
 
       <!-- Clientes -->
       <div id="clientes" class="tab-content">
-        <div class="content-header"><h2>Gestión de Clientes</h2></div>
+        <div class="content-header" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+          <h2>Gestión de Clientes</h2>
+          <button class="btn btn-success" onclick="abrirFormClienteModal()">➕ Agregar Cliente</button>
+        </div>
         <div class="content-body">
-          <div class="card">
-            <div class="card-header">Registrar Cliente</div>
-            <div class="card-body">
-              <form id="formCliente" onsubmit="registrarCliente(event)">
-                <div class="form-grid">
-                  <div class="form-group"><label>Clave *</label><input id="cliClave" required readonly placeholder="Se autogenerará" style="background:#f5f5f5;"></div>
-                  <div class="form-group"><label>Nombre *</label><input id="cliNombre" required></div>
-                  <div class="form-group"><label>Teléfono</label><input id="cliTelefono"></div>
-                  <div class="form-group"><label>Email</label><input id="cliEmail" type="email"></div>
-                  <div class="form-group"><label>Dirección</label><textarea id="cliDireccion" rows="2"></textarea></div>
-                </div>
-                <div class="actions">
-                  <button class="btn btn-success" type="submit" id="btnClienteGuardar">💾 Guardar</button>
-                  <button class="btn btn-secondary" type="button" onclick="limpiarFormCliente()">🗑️ Limpiar</button>
-                </div>
-                <!-- Foto Cliente (solo disponible al editar) -->
-                <div id="fotoClienteSection" style="margin-top:16px; padding:15px; border:1px solid #E5F2F7; border-radius:8px; background:#f9fdff;">
-                  <label style="font-weight:600; color:#2E86AB; font-size:0.9rem; margin-bottom:10px; display:block;">📷 Foto del Cliente <small style="font-weight:normal; color:#6c757d;">(disponible al editar)</small></label>
-                  <div style="display:flex; flex-wrap:wrap; align-items:flex-start; gap:12px;">
-                    <div>
-                      <input type="file" id="cliInputFoto" accept="image/*" capture="environment" onchange="onClienteFotoSelected()" style="display:none;">
-                      <label for="cliInputFoto" id="cliLabelFoto" class="btn btn-secondary" style="cursor:pointer;">📷 Elegir / Tomar foto</label>
-                    </div>
-                    <div id="cliPreviewContainer" style="display:none;">
-                      <img id="cliPreviewImg" src="" alt="Preview" style="max-width:120px; max-height:120px; border-radius:8px; border:1px solid #E5F2F7; object-fit:cover;">
-                    </div>
-                    <div style="display:flex; flex-direction:column; gap:8px;">
-                      <button type="button" id="btnSubirFotoCliente" class="btn btn-primary" onclick="subirFotoClienteDesdeUI()" disabled style="opacity:0.5;">⬆️ Subir foto</button>
-                      <button type="button" id="btnQuitarFotoCliente" class="btn btn-secondary" onclick="limpiarFotoClienteSeleccionada()">✕ Quitar</button>
-                    </div>
-                  </div>
-                  <div id="msgFotoCliente" style="margin-top:8px; font-size:0.85rem;"></div>
-                  <div id="cliFotoActualContainer" style="margin-top:8px; display:none;">
-                    <small style="color:#6c757d;">Foto actual:</small><br>
-                    <img id="cliFotoActualImg" src="" alt="Foto del cliente" style="max-width:150px; max-height:150px; border-radius:8px; border:1px solid #E5F2F7; object-fit:cover; margin-top:6px; display:block;">
-                    <a id="cliFotoActualLink" href="#" target="_blank" style="font-size:0.85rem; color:#2E86AB; display:inline-block; margin-top:4px;">🔍 Ver foto completa ↗</a>
-                  </div>
-                </div>
-              </form>
-              <div id="msgCliente"></div>
-            </div>
-          </div>
           <div class="card">
             <div class="card-header">Listado de Clientes <span id="contadorClientes" style="font-weight: normal; font-size: 0.85rem; margin-left: 10px; color: #6c757d;"></span></div>
             <div class="card-body">
@@ -610,6 +571,58 @@
     </div>
   </div>
 
+  <!-- MODAL FORM CLIENTE -->
+  <div id="clienteFormModal" style="display:none;">
+    <div class="modal-overlay" onclick="cerrarFormClienteModal()"></div>
+    <div class="modal-dialog" style="max-width:600px;">
+      <div style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:15px 20px; background:#2E86AB; color:white;">
+          <div style="font-weight:700; font-size:1.1rem;" id="clienteFormModalTitle">➕ Registrar Cliente</div>
+          <button onclick="cerrarFormClienteModal()" style="background:none; border:0; color:white; font-size:20px; cursor:pointer;">✖</button>
+        </div>
+        <div style="padding:25px; max-height:80vh; overflow-y:auto;">
+          <form id="formCliente" onsubmit="registrarCliente(event)">
+            <div class="form-grid">
+              <div class="form-group"><label>Clave *</label><input id="cliClave" required readonly placeholder="Se autogenerará" style="background:#f5f5f5;"></div>
+              <div class="form-group"><label>Nombre *</label><input id="cliNombre" required></div>
+              <div class="form-group"><label>Teléfono</label><input id="cliTelefono"></div>
+              <div class="form-group"><label>Email</label><input id="cliEmail" type="email"></div>
+              <div class="form-group"><label>Dirección</label><textarea id="cliDireccion" rows="2"></textarea></div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-success" type="submit" id="btnClienteGuardar">💾 Guardar</button>
+              <button class="btn btn-secondary" type="button" onclick="limpiarFormCliente()">🗑️ Limpiar</button>
+            </div>
+            <!-- Foto Cliente (solo disponible al editar) -->
+            <div id="fotoClienteSection" style="margin-top:16px; padding:15px; border:1px solid #E5F2F7; border-radius:8px; background:#f9fdff;">
+              <label style="font-weight:600; color:#2E86AB; font-size:0.9rem; margin-bottom:10px; display:block;">📷 Foto del Cliente <small style="font-weight:normal; color:#6c757d;">(disponible al editar)</small></label>
+              <div style="display:flex; flex-wrap:wrap; align-items:flex-start; gap:12px;">
+                <div>
+                  <input type="file" id="cliInputFoto" accept="image/*" capture="environment" onchange="onClienteFotoSelected()" style="display:none;">
+                  <label for="cliInputFoto" id="cliLabelFoto" class="btn btn-secondary" style="cursor:pointer;">📷 Elegir / Tomar foto</label>
+                </div>
+                <div id="cliPreviewContainer" style="display:none;">
+                  <img id="cliPreviewImg" src="" alt="Preview" style="max-width:120px; max-height:120px; border-radius:8px; border:1px solid #E5F2F7; object-fit:cover;">
+                </div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                  <button type="button" id="btnSubirFotoCliente" class="btn btn-primary" onclick="subirFotoClienteDesdeUI()" disabled style="opacity:0.5;">⬆️ Subir foto</button>
+                  <button type="button" id="btnQuitarFotoCliente" class="btn btn-secondary" onclick="limpiarFotoClienteSeleccionada()">✕ Quitar</button>
+                </div>
+              </div>
+              <div id="msgFotoCliente" style="margin-top:8px; font-size:0.85rem;"></div>
+              <div id="cliFotoActualContainer" style="margin-top:8px; display:none;">
+                <small style="color:#6c757d;">Foto actual:</small><br>
+                <img id="cliFotoActualImg" src="" alt="Foto del cliente" style="max-width:150px; max-height:150px; border-radius:8px; border:1px solid #E5F2F7; object-fit:cover; margin-top:6px; display:block;">
+                <a id="cliFotoActualLink" href="#" target="_blank" style="font-size:0.85rem; color:#2E86AB; display:inline-block; margin-top:4px;">🔍 Ver foto completa ↗</a>
+              </div>
+            </div>
+          </form>
+          <div id="msgCliente"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL DETALLE CLIENTE -->
   <div id="clienteDetalleModal" style="display:none;">
     <div class="modal-overlay" onclick="cerrarDetalleClienteModal()"></div>
@@ -798,13 +811,13 @@
         google.script.run.withSuccessHandler(msg => {
           const tipo = msg.includes('correctamente') ? 'success' : 'error';
           showMessage('msgCliente', msg, tipo);
-          if (tipo === 'success') { limpiarFormCliente(); mostrarClientes(); }
+          if (tipo === 'success') { limpiarFormCliente(); mostrarClientes(); cerrarFormClienteModal(); }
         }).withFailureHandler(err => showMessage('msgCliente', err, 'error')).actualizarCliente(cliente);
       } else {
         google.script.run.withSuccessHandler(msg => {
           const tipo = msg.includes('correctamente') ? 'success' : 'error';
           showMessage('msgCliente', msg, tipo);
-          if (tipo === 'success') { limpiarFormCliente(); cargarClaveCliente(); mostrarClientes(); }
+          if (tipo === 'success') { limpiarFormCliente(); cargarClaveCliente(); mostrarClientes(); cerrarFormClienteModal(); }
         }).withFailureHandler(err => showMessage('msgCliente', err, 'error')).registrarCliente(cliente);
       }
     }
@@ -918,6 +931,16 @@
       document.getElementById('clienteDetalleModal').style.display = 'none';
     }
 
+    function abrirFormClienteModal() {
+      limpiarFormCliente();
+      document.getElementById('clienteFormModalTitle').textContent = '➕ Registrar Cliente';
+      document.getElementById('clienteFormModal').style.display = 'block';
+    }
+
+    function cerrarFormClienteModal() {
+      document.getElementById('clienteFormModal').style.display = 'none';
+    }
+
     function editarCliente(clave) {
       const cliente = todosLosClientes.find(c => c.clave === clave);
       if (!cliente) return;
@@ -946,7 +969,8 @@
         if (fotoActualImg) fotoActualImg.src = '';
         fotoActualContainer.style.display = 'none';
       }
-      document.getElementById('fotoClienteSection').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      document.getElementById('clienteFormModalTitle').textContent = '✏️ Editar Cliente';
+      document.getElementById('clienteFormModal').style.display = 'block';
     }
 
     function confirmarBajaCliente(clave) {
