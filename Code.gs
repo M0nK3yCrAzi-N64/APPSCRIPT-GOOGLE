@@ -1195,11 +1195,30 @@ function guardarCheckVenta(payload) {
 
 /* ------------------- DEPÓSITOS DE VENTAS ------------------- */
 
+// DEPOSITOS sheet columns: [0]VENTA_ID [1]Fecha [2]Monto [3]Tipo [4]Comentario [5]Usuario [6]DEP_ID [7]ESTADO [8]CLIENTE_ID
+
+function _generarDepId_() {
+  return 'DEP' + new Date().getTime().toString(36).toUpperCase();
+}
+
 function _asegurarHojaDepositos_(ss) {
   let sheet = ss.getSheetByName(HOJA_DEPOSITOS);
   if (!sheet) {
     sheet = ss.insertSheet(HOJA_DEPOSITOS);
-    sheet.getRange(1, 1, 1, 6).setValues([['VENTA_ID', 'Fecha', 'Monto', 'Tipo', 'Comentario', 'Usuario']]);
+    sheet.getRange(1, 1, 1, 9).setValues([['VENTA_ID', 'Fecha', 'Monto', 'Tipo', 'Comentario', 'Usuario', 'DEP_ID', 'ESTADO', 'CLIENTE_ID']]);
+  } else {
+    // Migrate existing sheet: add DEP_ID, ESTADO, CLIENTE_ID columns if missing
+    const lastCol = sheet.getLastColumn();
+    if (lastCol < 7) {
+      sheet.getRange(1, 7).setValue('DEP_ID');
+      sheet.getRange(1, 8).setValue('ESTADO');
+      sheet.getRange(1, 9).setValue('CLIENTE_ID');
+    } else if (lastCol < 8) {
+      sheet.getRange(1, 8).setValue('ESTADO');
+      sheet.getRange(1, 9).setValue('CLIENTE_ID');
+    } else if (lastCol < 9) {
+      sheet.getRange(1, 9).setValue('CLIENTE_ID');
+    }
   }
   return sheet;
 }
@@ -1219,21 +1238,84 @@ function registrarDeposito(payload) {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const sheet = _asegurarHojaDepositos_(ss);
     const user = Session.getActiveUser().getEmail() || 'Sistema';
+    const depId = _generarDepId_();
     sheet.appendRow([
       String(payload.ventaId).toUpperCase(),
       new Date(),
       monto,
       String(payload.tipo),
       String(payload.comentario || ''),
-      user
+      user,
+      depId,
+      'Activo',
+      String(payload.clienteId || '')
     ]);
-    return { ok: true };
+    return { ok: true, depId };
   } catch (e) {
     console.error('registrarDeposito:', e);
     return { ok: false, error: e.message };
   } finally {
     if (lock) { try { lock.releaseLock(); } catch (e) {} }
   }
+}
+
+function registrarCargoEspecial(payload) {
+  let lock;
+  try {
+    if (!payload || !payload.clienteId || !payload.monto) {
+      return { ok: false, error: 'Datos incompletos (clienteId y monto requeridos)' };
+    }
+    const monto = parseFloat(payload.monto);
+    if (isNaN(monto) || monto <= 0) return { ok: false, error: 'Monto inválido' };
+
+    lock = LockService.getScriptLock();
+    if (!lock.tryLock(20000)) return { ok: false, error: 'Sistema ocupado' };
+
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = _asegurarHojaDepositos_(ss);
+    const user = Session.getActiveUser().getEmail() || 'Sistema';
+    const depId = _generarDepId_();
+    const clienteUpper = String(payload.clienteId).toUpperCase();
+    sheet.appendRow([
+      'CARGO_ESPECIAL',
+      new Date(),
+      monto,
+      'Cargo Especial',
+      String(payload.comentario || ''),
+      user,
+      depId,
+      'Activo',
+      clienteUpper
+    ]);
+    return { ok: true, depId };
+  } catch (e) {
+    console.error('registrarCargoEspecial:', e);
+    return { ok: false, error: e.message };
+  } finally {
+    if (lock) { try { lock.releaseLock(); } catch (e) {} }
+  }
+}
+
+function obtenerSaldoFavorCliente(clienteClave) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(HOJA_DEPOSITOS);
+    if (!sheet || sheet.getLastRow() < 2) return 0;
+    const clave = String(clienteClave).trim().toUpperCase();
+    const data = sheet.getDataRange().getValues().slice(1);
+    let saldo = 0;
+    data.forEach(r => {
+      const estado = String(r[7] || 'Activo').trim();
+      const cliente = String(r[8] || '').trim().toUpperCase();
+      const tipo = String(r[3] || '').trim();
+      if (estado === 'Cancelado') return;
+      // 'Cargo Especial' adds credit to the client's balance (anticipo/prepayment).
+      // 'Saldo a Favor' used as payment type deducts from that credit balance.
+      if (tipo === 'Cargo Especial' && cliente === clave) saldo += parseFloat(r[2]) || 0;
+      if (tipo === 'Saldo a Favor' && cliente === clave) saldo -= parseFloat(r[2]) || 0;
+    });
+    return Math.round(Math.max(0, saldo) * 100) / 100;
+  } catch (e) { return 0; }
 }
 
 function obtenerDepositosPorVenta(ventaId) {
@@ -1245,13 +1327,17 @@ function obtenerDepositosPorVenta(ventaId) {
     const data = sheet.getDataRange().getValues().slice(1);
     return data
       .filter(r => String(r[0] || '').trim().toUpperCase() === idUpper)
+      .filter(r => String(r[7] || 'Activo').trim() !== 'Cancelado')
       .map(r => ({
-        ventaId: r[0],
+        ventaId: String(r[0] || ''),
         fecha: r[1] ? formatearFecha(r[1]) : '',
         monto: parseFloat(r[2]) || 0,
         tipo: String(r[3] || ''),
         comentario: String(r[4] || ''),
-        usuario: String(r[5] || '')
+        usuario: String(r[5] || ''),
+        depId: String(r[6] || ''),
+        estado: String(r[7] || 'Activo'),
+        clienteId: String(r[8] || '')
       }));
   } catch (e) { return []; }
 }
@@ -1268,8 +1354,173 @@ function _calcularTotalDepositos_(ss, ventaId) {
     const data = sheet.getDataRange().getValues().slice(1);
     return data
       .filter(r => String(r[0] || '').trim().toUpperCase() === idUpper)
+      .filter(r => String(r[7] || 'Activo').trim() !== 'Cancelado')
       .reduce((sum, r) => sum + (parseFloat(r[2]) || 0), 0);
   } catch (e) { return 0; }
+}
+
+function _encontrarFilaDeposito_(sheet, depId) {
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][6] || '') === depId) return i + 1;
+  }
+  return -1;
+}
+
+function obtenerDepositoPorId(depId) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(HOJA_DEPOSITOS);
+    if (!sheet || sheet.getLastRow() < 2) return null;
+    const data = sheet.getDataRange().getValues().slice(1);
+    const row = data.find(r => String(r[6] || '') === depId);
+    if (!row) return null;
+    return {
+      ventaId: String(row[0] || ''),
+      fecha: row[1] ? formatearFecha(row[1]) : '',
+      monto: parseFloat(row[2]) || 0,
+      tipo: String(row[3] || ''),
+      comentario: String(row[4] || ''),
+      usuario: String(row[5] || ''),
+      depId: String(row[6] || ''),
+      estado: String(row[7] || 'Activo'),
+      clienteId: String(row[8] || '')
+    };
+  } catch (e) { return null; }
+}
+
+function listarTodosDepositos(filtros) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(HOJA_DEPOSITOS);
+    if (!sheet || sheet.getLastRow() < 2) return [];
+
+    const mapaClientes = obtenerMapaClientesPorClave();
+    const caja = ss.getSheetByName(HOJA_CAJA);
+    const ventaClienteMap = {};
+    if (caja && caja.getLastRow() >= 2) {
+      caja.getDataRange().getValues().slice(1).forEach(r => {
+        const id = String(r[0] || '').trim().toUpperCase();
+        if (id && !ventaClienteMap[id]) {
+          const clave = String(r[2] || '').toUpperCase();
+          ventaClienteMap[id] = { clienteClave: clave, clienteNombre: mapaClientes[clave] || clave };
+        }
+      });
+    }
+
+    const f = filtros || {};
+    const filtroEstado = f.estado || 'TODAS';
+    const filtroTipo   = f.tipo   || '';
+    const filtroVenta  = f.ventaId ? String(f.ventaId).trim().toUpperCase() : '';
+
+    return sheet.getDataRange().getValues().slice(1)
+      .map((r, i) => {
+        const ventaId = String(r[0] || '');
+        const infoVenta = ventaClienteMap[ventaId.toUpperCase()];
+        const clienteId = String(r[8] || '');
+        const clienteNombre = infoVenta
+          ? infoVenta.clienteNombre
+          : (clienteId ? (mapaClientes[clienteId.toUpperCase()] || clienteId) : '');
+        const clienteClave = infoVenta ? infoVenta.clienteClave : clienteId;
+        return {
+          rowNum: i + 2,
+          ventaId,
+          fecha: r[1] ? formatearFecha(r[1]) : '',
+          monto: parseFloat(r[2]) || 0,
+          tipo: String(r[3] || ''),
+          comentario: String(r[4] || ''),
+          usuario: String(r[5] || ''),
+          depId: String(r[6] || ''),
+          estado: String(r[7] || 'Activo'),
+          clienteId,
+          cliente: clienteNombre,
+          clienteClave
+        };
+      })
+      .filter(d => {
+        if (filtroEstado === 'ACTIVOS')    return d.estado !== 'Cancelado';
+        if (filtroEstado === 'CANCELADOS') return d.estado === 'Cancelado';
+        return true;
+      })
+      .filter(d => !filtroTipo  || d.tipo === filtroTipo)
+      .filter(d => !filtroVenta || d.ventaId.toUpperCase() === filtroVenta);
+  } catch (e) {
+    console.error('listarTodosDepositos:', e);
+    return [];
+  }
+}
+
+function editarDeposito(payload) {
+  let lock;
+  try {
+    if (!payload || !payload.depId) return { ok: false, error: 'ID de depósito requerido' };
+    const monto = parseFloat(payload.monto);
+    if (isNaN(monto) || monto <= 0) return { ok: false, error: 'Monto inválido' };
+
+    lock = LockService.getScriptLock();
+    if (!lock.tryLock(20000)) return { ok: false, error: 'Sistema ocupado' };
+
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = _asegurarHojaDepositos_(ss);
+    const fila = _encontrarFilaDeposito_(sheet, payload.depId);
+    if (fila < 0) return { ok: false, error: 'Depósito no encontrado' };
+
+    sheet.getRange(fila, 3).setValue(monto);
+    sheet.getRange(fila, 4).setValue(String(payload.tipo || ''));
+    sheet.getRange(fila, 5).setValue(String(payload.comentario || ''));
+    return { ok: true };
+  } catch (e) {
+    console.error('editarDeposito:', e);
+    return { ok: false, error: e.message };
+  } finally {
+    if (lock) { try { lock.releaseLock(); } catch (e) {} }
+  }
+}
+
+function cancelarDeposito(depId) {
+  let lock;
+  try {
+    if (!depId) return { ok: false, error: 'ID requerido' };
+
+    lock = LockService.getScriptLock();
+    if (!lock.tryLock(20000)) return { ok: false, error: 'Sistema ocupado' };
+
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = _asegurarHojaDepositos_(ss);
+    const fila = _encontrarFilaDeposito_(sheet, depId);
+    if (fila < 0) return { ok: false, error: 'Depósito no encontrado' };
+
+    sheet.getRange(fila, 8).setValue('Cancelado');
+    return { ok: true };
+  } catch (e) {
+    console.error('cancelarDeposito:', e);
+    return { ok: false, error: e.message };
+  } finally {
+    if (lock) { try { lock.releaseLock(); } catch (e) {} }
+  }
+}
+
+function eliminarDeposito(depId) {
+  let lock;
+  try {
+    if (!depId) return { ok: false, error: 'ID requerido' };
+
+    lock = LockService.getScriptLock();
+    if (!lock.tryLock(20000)) return { ok: false, error: 'Sistema ocupado' };
+
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = _asegurarHojaDepositos_(ss);
+    const fila = _encontrarFilaDeposito_(sheet, depId);
+    if (fila < 0) return { ok: false, error: 'Depósito no encontrado' };
+
+    sheet.deleteRow(fila);
+    return { ok: true };
+  } catch (e) {
+    console.error('eliminarDeposito:', e);
+    return { ok: false, error: e.message };
+  } finally {
+    if (lock) { try { lock.releaseLock(); } catch (e) {} }
+  }
 }
 
 function listarVentasPorEstado(estado) {
