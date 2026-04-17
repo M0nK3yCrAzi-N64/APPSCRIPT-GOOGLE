@@ -955,9 +955,12 @@
     }
 
     function cargarParametrosParaUI() {
-      google.script.run.withSuccessHandler(p => {
-        if (p && p.logoUrl) aplicarLogoEnUI(p.logoUrl);
-      }).obtenerParametros();
+      google.script.run
+        .withSuccessHandler(p => {
+          if (p && p.logoUrl) aplicarLogoEnUI(p.logoUrl);
+        })
+        .withFailureHandler(err => console.error('Error al cargar parámetros:', err))
+        .obtenerParametros();
     }
 
     function aplicarLogoEnUI(logoUrl) {
@@ -993,7 +996,13 @@
       document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
       const tabEl = document.getElementById(tabName);
       if (tabEl) tabEl.classList.add('active');
-      const linkEl = evt ? evt.currentTarget || evt.target : null;
+      let linkEl = null;
+      if (evt) {
+        linkEl = evt.currentTarget || null;
+        if (!linkEl && evt.target) {
+          linkEl = evt.target.closest ? evt.target.closest('.nav-link') : evt.target;
+        }
+      }
       if (linkEl && linkEl.classList) linkEl.classList.add('active');
 
       currentTab = tabName;
@@ -1008,27 +1017,43 @@
     }
 
     function loadListas() {
-      google.script.run.withSuccessHandler(data => {
-        const unidadSelect = document.getElementById("unidadProd");
-        const grupoSelect  = document.getElementById("grupoProd");
-        if (unidadSelect) unidadSelect.innerHTML = "";
-        if (grupoSelect)  grupoSelect.innerHTML  = "";
-        (data.unidades || []).forEach(u => unidadSelect && (unidadSelect.innerHTML += `<option value="${u}">${u}</option>`));
-        (data.grupos   || []).forEach(g => grupoSelect  && (grupoSelect.innerHTML  += `<option value="${g}">${g}</option>`));
-      }).obtenerListas();
+      google.script.run
+        .withSuccessHandler(data => {
+          const unidadSelect = document.getElementById("unidadProd");
+          const grupoSelect  = document.getElementById("grupoProd");
+          if (unidadSelect) unidadSelect.innerHTML = "";
+          if (grupoSelect)  grupoSelect.innerHTML  = "";
+          if (unidadSelect) {
+            const uHtml = (data.unidades || []).map(u => `<option value="${u}">${u}</option>`).join('');
+            unidadSelect.innerHTML = uHtml;
+          }
+          if (grupoSelect) {
+            const gHtml = (data.grupos || []).map(g => `<option value="${g}">${g}</option>`).join('');
+            grupoSelect.innerHTML = gHtml;
+          }
+        })
+        .withFailureHandler(err => console.error('Error al cargar listas:', err))
+        .obtenerListas();
     }
 
     function loadDashboard() {
-      google.script.run.withSuccessHandler(data => {
-        const statsGrid = document.getElementById('statsGrid');
-        if (!statsGrid) return;
-        statsGrid.innerHTML = `
-          <div class="stat-card"><div class="stat-value">${data.totalProductos}</div><div class="stat-label">Total Productos</div></div>
-          <div class="stat-card"><div class="stat-value">${data.totalMovimientos}</div><div class="stat-label">Total Movimientos</div></div>
-          <div class="stat-card"><div class="stat-value">${data.sinStock}</div><div class="stat-label">Sin Stock</div></div>
-          <div class="stat-card"><div class="stat-value">${data.stockBajo}</div><div class="stat-label">Stock Bajo</div></div>
-        `;
-      }).obtenerResumen();
+      google.script.run
+        .withSuccessHandler(data => {
+          const statsGrid = document.getElementById('statsGrid');
+          if (!statsGrid) return;
+          statsGrid.innerHTML = `
+            <div class="stat-card"><div class="stat-value">${data.totalProductos}</div><div class="stat-label">Total Productos</div></div>
+            <div class="stat-card"><div class="stat-value">${data.totalMovimientos}</div><div class="stat-label">Total Movimientos</div></div>
+            <div class="stat-card"><div class="stat-value">${data.sinStock}</div><div class="stat-label">Sin Stock</div></div>
+            <div class="stat-card"><div class="stat-value">${data.stockBajo}</div><div class="stat-label">Stock Bajo</div></div>
+          `;
+        })
+        .withFailureHandler(err => {
+          const statsGrid = document.getElementById('statsGrid');
+          if (statsGrid) statsGrid.innerHTML = '<div class="message error">Error al cargar datos del dashboard. Verifique la conexión.</div>';
+          console.error('Error en loadDashboard:', err);
+        })
+        .obtenerResumen();
     }
 
     function showStockAlerts() {
@@ -1049,9 +1074,12 @@
 
     /* ------------------- CLIENTES ------------------- */
     function cargarClaveCliente() {
-      google.script.run.withSuccessHandler(clave => {
-        if (clave && document.getElementById('cliClave')) document.getElementById('cliClave').value = clave;
-      }).obtenerClaveCliente();
+      google.script.run
+        .withSuccessHandler(clave => {
+          if (clave && document.getElementById('cliClave')) document.getElementById('cliClave').value = clave;
+        })
+        .withFailureHandler(err => console.error('Error al cargar clave cliente:', err))
+        .obtenerClaveCliente();
     }
 
     function registrarCliente(e) {
@@ -1336,7 +1364,10 @@
 
     /* ------------------- KITS ------------------- */
     function cargarKitCodigo() {
-      google.script.run.withSuccessHandler(c => { if (!editandoKit && c) document.getElementById('kitCodigo').value = c; }).obtenerCodigoKit();
+      google.script.run
+        .withSuccessHandler(c => { if (!editandoKit && c) document.getElementById('kitCodigo').value = c; })
+        .withFailureHandler(err => console.error('Error al cargar código kit:', err))
+        .obtenerCodigoKit();
     }
     function agregarComponenteKit() { componentesKit.push({ codigo: '', cantidad: '', nombre: '' }); renderTablaComponentesKit(); }
     function updateComponenteKit(idx, field, value) { componentesKit[idx][field] = value; }
@@ -1421,12 +1452,15 @@
     }
 
     function cargarKits() {
-      google.script.run.withSuccessHandler(data => {
-        kitsDisponibles = data || [];
-        kitsMap = {};
-        kitsDisponibles.forEach(k => { kitsMap[k.codigo.toUpperCase()] = k; });
-        renderTablaKits(kitsDisponibles);
-      }).obtenerKits();
+      google.script.run
+        .withSuccessHandler(data => {
+          kitsDisponibles = data || [];
+          kitsMap = {};
+          kitsDisponibles.forEach(k => { kitsMap[k.codigo.toUpperCase()] = k; });
+          renderTablaKits(kitsDisponibles);
+        })
+        .withFailureHandler(err => console.error('Error al cargar kits:', err))
+        .obtenerKits();
     }
 
     function filtrarKits() {
@@ -1635,22 +1669,28 @@
 
     function cargarIdCaja(tipo) {
       const tipoArg = tipo || (document.getElementById('cajaTipo') ? document.getElementById('cajaTipo').value : '');
-      google.script.run.withSuccessHandler(id => { const el = document.getElementById('cajaId'); if (el) el.value = id || ''; }).generarIdCaja(tipoArg);
+      google.script.run
+        .withSuccessHandler(id => { const el = document.getElementById('cajaId'); if (el) el.value = id || ''; })
+        .withFailureHandler(err => console.error('Error al cargar ID caja:', err))
+        .generarIdCaja(tipoArg);
     }
 
     function cargarClientesCaja() {
-      google.script.run.withSuccessHandler(data => {
-        clientesCaja = (data || []).filter(c => (c.estado || '').toUpperCase() === 'ACTIVO');
-        const sel = document.getElementById('cajaCliente');
-        if (!sel) return;
-        sel.innerHTML = '<option value="">Seleccione...</option>';
-        clientesCaja.forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c.clave;
-          opt.textContent = `${c.clave} - ${c.nombre}`;
-          sel.appendChild(opt);
-        });
-      }).obtenerClientes();
+      google.script.run
+        .withSuccessHandler(data => {
+          clientesCaja = (data || []).filter(c => (c.estado || '').toUpperCase() === 'ACTIVO');
+          const sel = document.getElementById('cajaCliente');
+          if (!sel) return;
+          sel.innerHTML = '<option value="">Seleccione...</option>';
+          clientesCaja.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.clave;
+            opt.textContent = `${c.clave} - ${c.nombre}`;
+            sel.appendChild(opt);
+          });
+        })
+        .withFailureHandler(err => console.error('Error al cargar clientes caja:', err))
+        .obtenerClientes();
     }
 
     function cargarCajaInicial() {
