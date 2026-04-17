@@ -1074,7 +1074,7 @@ const HOJA_CHECKS_VENTAS = "CHECKS_VENTAS";
 
 function esTipoVentaFlexible(tipo) {
   const t = normalizarTipoMovimiento(tipo);
-  return t === TIPOS_MOVIMIENTO.SALIDA_VENTA || t.indexOf('VENTA') !== -1;
+  return t === TIPOS_MOVIMIENTO.SALIDA_VENTA;
 }
 
 function obtenerVentaPorId(id) {
@@ -1244,8 +1244,8 @@ function listarVentasPorEstado(estado) {
       venta.estadoPago = liquidadas.has(id) ? 'SIN_SALDO' : 'CON_SALDO';
       let incluir = false;
       if (!estado || estado === 'TODAS') incluir = true;
-      else if (estado === 'CON_SALDO') { if (venta.estadoPago === 'CON_SALDO') incluir = true; }
-      else if (estado === 'SIN_SALDO') { if (venta.estadoPago === 'SIN_SALDO') incluir = true; }
+      else if (estado === 'CON_SALDO') incluir = (venta.estadoPago === 'CON_SALDO');
+      else if (estado === 'SIN_SALDO') incluir = (venta.estadoPago === 'SIN_SALDO');
       if (incluir) result.push(venta);
     }
     return result;
