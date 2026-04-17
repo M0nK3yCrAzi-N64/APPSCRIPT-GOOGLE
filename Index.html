@@ -2357,11 +2357,27 @@
       btnT.style.borderBottom = isDetalle ? '3px solid transparent' : '3px solid #2E86AB';
     }
 
+    function getSaldoPendienteHtml() {
+      if (!ventaCargada) return '-';
+      if (ventaCargada.estadoPago === 'SIN_SALDO') {
+        return '<strong>Saldo pendiente:</strong> <span style="color:#28a745;font-weight:700;font-size:1.1em;">$0.00 ✅</span>';
+      }
+      const saldo = ventaCargada.saldo || 0;
+      if (saldo <= 0) {
+        return '<strong>Saldo pendiente:</strong> <span style="color:#28a745;font-weight:700;font-size:1.1em;">$0.00</span> <small style="color:#ffc107;font-weight:600;">(pendiente de marcar SIN SALDO)</small>';
+      }
+      return `<strong>Saldo pendiente:</strong> <span style="color:#dc3545;font-weight:700;font-size:1.1em;">$${saldo.toFixed(2)}</span>`;
+    }
+
     function renderTransacciones(depositos) {
       const container = document.getElementById('tablaTransacciones');
       if (!container) return;
       if (!depositos || depositos.length === 0) {
-        container.innerHTML = '<div class="message info">No hay depósitos registrados para esta venta.</div>';
+        container.innerHTML = `
+          <div style="background:#e8f4f8;padding:12px 15px;border-radius:8px;margin-bottom:12px;">
+            ${getSaldoPendienteHtml()}
+          </div>
+          <div class="message info">No hay depósitos registrados para esta venta.</div>`;
         return;
       }
       const totalDep = depositos.reduce((s, d) => s + d.monto, 0);
@@ -2374,9 +2390,9 @@
         <td style="font-size:0.8em;color:#6c757d;">${d.usuario}</td>
       </tr>`).join('');
       container.innerHTML = `
-        <div style="background:#e8f4f8;padding:12px 15px;border-radius:8px;margin-bottom:12px;display:flex;gap:30px;align-items:center;">
+        <div style="background:#e8f4f8;padding:12px 15px;border-radius:8px;margin-bottom:12px;display:flex;gap:30px;align-items:center;flex-wrap:wrap;">
           <div><strong>Total depositado:</strong> <span style="color:#17a2b8;font-weight:700;font-size:1.1em;">$${totalDep.toFixed(2)}</span></div>
-          <div><strong>Saldo pendiente:</strong> <span style="color:${ventaCargada && ventaCargada.saldo > 0 ? '#dc3545' : '#28a745'};font-weight:700;font-size:1.1em;">${ventaCargada ? '$' + (ventaCargada.estadoPago === 'SIN_SALDO' ? '0.00' : ventaCargada.saldo.toFixed(2)) : '-'}</span></div>
+          <div>${getSaldoPendienteHtml()}</div>
         </div>
         <div class="table-container">
           <table>

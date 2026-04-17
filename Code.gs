@@ -1119,7 +1119,7 @@ function obtenerVentaPorId(id) {
     const estadoPago = calcularEstadoVenta(idUpper);
     const depositos = obtenerDepositosPorVenta(idUpper);
     const totalDepositos = Number(depositos.reduce((s, d) => s + d.monto, 0).toFixed(2));
-    const totalImporteRnd = Number(totalImporte.toFixed(2));
+    const totalImporteRedondeado = Number(totalImporte.toFixed(2));
 
     return {
       id: cab[0],
@@ -1131,9 +1131,9 @@ function obtenerVentaPorId(id) {
       remision: cab[5],
       tipo: cab[6],
       lineas,
-      totalImporte: totalImporteRnd,
+      totalImporte: totalImporteRedondeado,
       totalDepositos,
-      saldo: Number(Math.max(0, totalImporteRnd - totalDepositos).toFixed(2)),
+      saldo: _calcularSaldo_(totalImporteRedondeado, totalDepositos),
       depositos,
       estadoPago
     };
@@ -1256,6 +1256,10 @@ function obtenerDepositosPorVenta(ventaId) {
   } catch (e) { return []; }
 }
 
+function _calcularSaldo_(totalImporte, totalDepositos) {
+  return Number(Math.max(0, totalImporte - totalDepositos).toFixed(2));
+}
+
 function _calcularTotalDepositos_(ss, ventaId) {
   try {
     const sheet = ss.getSheetByName(HOJA_DEPOSITOS);
@@ -1326,7 +1330,7 @@ function listarVentasPorEstado(estado) {
       venta.estadoPago = liquidadas.has(id) ? 'SIN_SALDO' : 'CON_SALDO';
       const totalDepositos = Number(_calcularTotalDepositos_(ss, id).toFixed(2));
       venta.totalDepositos = totalDepositos;
-      venta.saldo = Number(Math.max(0, venta.totalImporte - totalDepositos).toFixed(2));
+      venta.saldo = _calcularSaldo_(venta.totalImporte, totalDepositos);
       let incluir = false;
       if (!estado || estado === 'TODAS') incluir = true;
       else if (estado === 'CON_SALDO') incluir = (venta.estadoPago === 'CON_SALDO');
