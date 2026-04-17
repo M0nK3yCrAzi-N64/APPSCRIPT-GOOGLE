@@ -1003,6 +1003,12 @@
           linkEl = evt.target.closest ? evt.target.closest('.nav-link') : evt.target;
         }
       }
+      if (!linkEl) {
+        document.querySelectorAll('.nav-link').forEach(link => {
+          const oc = link.getAttribute('onclick') || '';
+          if (oc.includes("'" + tabName + "'") || oc.includes('"' + tabName + '"')) linkEl = link;
+        });
+      }
       if (linkEl && linkEl.classList) linkEl.classList.add('active');
 
       currentTab = tabName;
@@ -1573,6 +1579,12 @@
       }).withFailureHandler(err => { showMessage('msgMov', 'Error: ' + err, 'error'); if (btn) btn.disabled = false; }).registrarMovimientosBatch(borradoresMov);
     }
 
+    function limpiarFormMovimiento() {
+      document.getElementById('formMovimiento').reset();
+      document.getElementById("fechaMov").valueAsDate = new Date();
+      document.getElementById('msgMov').innerHTML = '';
+    }
+
     function buscarProductoAutocompletado() {
       clearTimeout(autocompleteTimeout);
       const input = document.getElementById("codigoMov");
@@ -1601,6 +1613,16 @@
       const container = document.getElementById("stockTable");
       if (loading) loading.style.display = "block";
       google.script.run.withSuccessHandler(data => { if (loading) loading.style.display = "none"; displayStockTable(data, container); }).obtenerStock();
+    }
+    function mostrarAlertas() {
+      const loading = document.getElementById("loading");
+      const container = document.getElementById("stockTable");
+      if (loading) loading.style.display = "block";
+      google.script.run.withSuccessHandler(data => {
+        if (loading) loading.style.display = "none";
+        const alertas = data.filter(p => p.cantidad <= 0 || (p.cantidad <= p.stockMin && p.stockMin > 0));
+        displayStockTable(alertas, container);
+      }).obtenerStock();
     }
     function displayStockTable(data, container) {
       if (data.length === 0) { container.innerHTML = '<div class="message warning">No hay productos registrados</div>'; return; }
