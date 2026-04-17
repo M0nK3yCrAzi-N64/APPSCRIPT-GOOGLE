@@ -234,7 +234,9 @@
                   </div>
                   <div id="msgFotoCliente" style="margin-top:8px; font-size:0.85rem;"></div>
                   <div id="cliFotoActualContainer" style="margin-top:8px; display:none;">
-                    <small style="color:#6c757d;">Foto actual: </small><a id="cliFotoActualLink" href="#" target="_blank" style="font-size:0.85rem; color:#2E86AB;">Ver foto ↗</a>
+                    <small style="color:#6c757d;">Foto actual:</small><br>
+                    <img id="cliFotoActualImg" src="" alt="Foto del cliente" style="max-width:150px; max-height:150px; border-radius:8px; border:1px solid #E5F2F7; object-fit:cover; margin-top:6px; display:block;">
+                    <a id="cliFotoActualLink" href="#" target="_blank" style="font-size:0.85rem; color:#2E86AB; display:inline-block; margin-top:4px;">🔍 Ver foto completa ↗</a>
                   </div>
                 </div>
               </form>
@@ -608,6 +610,37 @@
     </div>
   </div>
 
+  <!-- MODAL DETALLE CLIENTE -->
+  <div id="clienteDetalleModal" style="display:none;">
+    <div class="modal-overlay" onclick="cerrarDetalleClienteModal()"></div>
+    <div class="modal-dialog" style="max-width:480px;">
+      <div style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:15px 20px; background:#2E86AB; color:white;">
+          <div style="font-weight:700; font-size:1.1rem;">👤 Detalle del Cliente</div>
+          <button onclick="cerrarDetalleClienteModal()" style="background:none; border:0; color:white; font-size:20px; cursor:pointer;">✖</button>
+        </div>
+        <div style="padding:25px;">
+          <div style="text-align:center; margin-bottom:20px;">
+            <img id="clienteDetalleImg" src="" alt="Foto del cliente" style="width:150px; height:150px; border-radius:50%; border:3px solid #5DADE2; object-fit:cover; display:none;">
+            <div id="clienteDetalleSinFoto" style="width:150px; height:150px; border-radius:50%; border:3px solid #E5F2F7; background:#F0F8FC; display:inline-flex; align-items:center; justify-content:center; font-size:3rem; color:#b0cfe0;">👤</div>
+          </div>
+          <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+            <tr><td style="padding:8px 5px; color:#6c757d; font-weight:600; white-space:nowrap;">🔑 Clave</td><td id="dcClave" style="padding:8px 5px;"></td></tr>
+            <tr style="background:#F8FBFD;"><td style="padding:8px 5px; color:#6c757d; font-weight:600; white-space:nowrap;">👤 Nombre</td><td id="dcNombre" style="padding:8px 5px;"></td></tr>
+            <tr><td style="padding:8px 5px; color:#6c757d; font-weight:600; white-space:nowrap;">📞 Teléfono</td><td id="dcTelefono" style="padding:8px 5px;"></td></tr>
+            <tr style="background:#F8FBFD;"><td style="padding:8px 5px; color:#6c757d; font-weight:600; white-space:nowrap;">📧 Email</td><td id="dcEmail" style="padding:8px 5px;"></td></tr>
+            <tr><td style="padding:8px 5px; color:#6c757d; font-weight:600; white-space:nowrap;">📍 Dirección</td><td id="dcDireccion" style="padding:8px 5px;"></td></tr>
+            <tr style="background:#F8FBFD;"><td style="padding:8px 5px; color:#6c757d; font-weight:600; white-space:nowrap;">⚡ Estado</td><td id="dcEstado" style="padding:8px 5px;"></td></tr>
+          </table>
+          <div style="text-align:center; margin-top:20px;">
+            <a id="dcFotoLink" href="#" target="_blank" style="display:none; font-size:0.85rem; color:#2E86AB; margin-right:15px;">🔍 Ver foto completa ↗</a>
+            <button onclick="cerrarDetalleClienteModal()" class="btn btn-secondary" style="padding:8px 20px;">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     function showMessage(containerId, message, type) {
       const container = document.getElementById(containerId);
@@ -856,8 +889,32 @@
     function verDetalleCliente(clave) {
       const cliente = todosLosClientes.find(c => c.clave === clave);
       if (!cliente) { alert('Cliente no encontrado'); return; }
-      const detalle = `━━━━━━━━━━━━━━━━━━━━━━━━\n📋 DETALLE DEL CLIENTE\n━━━━━━━  ━━━━━━━━━━━━━━━━\n\n🔑 Clave: ${cliente.clave}\n👤 Nombre: ${cliente.nombre}\n📞 Teléfono: ${cliente.telefono || 'No registrado'}\n📧 Email: ${cliente.email || 'No registrado'}\n📍 Dirección: ${cliente.direccion || 'No registrada'}\n⚡ Estado: ${cliente.estado}\n\n━━━━━━━━━━━━━━━━━━━━━━━━`;
-      alert(detalle);
+      document.getElementById('dcClave').textContent = cliente.clave;
+      document.getElementById('dcNombre').textContent = cliente.nombre;
+      document.getElementById('dcTelefono').textContent = cliente.telefono || 'No registrado';
+      document.getElementById('dcEmail').textContent = cliente.email || 'No registrado';
+      document.getElementById('dcDireccion').textContent = cliente.direccion || 'No registrada';
+      document.getElementById('dcEstado').textContent = cliente.estado;
+      const img = document.getElementById('clienteDetalleImg');
+      const sinFoto = document.getElementById('clienteDetalleSinFoto');
+      const fotoLink = document.getElementById('dcFotoLink');
+      if (cliente.fotoUrl) {
+        img.src = cliente.fotoUrl;
+        img.style.display = 'inline-block';
+        sinFoto.style.display = 'none';
+        fotoLink.href = cliente.fotoUrl;
+        fotoLink.style.display = 'inline';
+      } else {
+        img.src = '';
+        img.style.display = 'none';
+        sinFoto.style.display = 'inline-flex';
+        fotoLink.style.display = 'none';
+      }
+      document.getElementById('clienteDetalleModal').style.display = 'block';
+    }
+
+    function cerrarDetalleClienteModal() {
+      document.getElementById('clienteDetalleModal').style.display = 'none';
     }
 
     function editarCliente(clave) {
@@ -875,10 +932,13 @@
       limpiarFotoClienteSeleccionada();
       const fotoActualContainer = document.getElementById('cliFotoActualContainer');
       const fotoActualLink = document.getElementById('cliFotoActualLink');
+      const fotoActualImg = document.getElementById('cliFotoActualImg');
       if (cliente.fotoUrl) {
         fotoActualLink.href = cliente.fotoUrl;
+        if (fotoActualImg) fotoActualImg.src = cliente.fotoUrl;
         fotoActualContainer.style.display = 'block';
       } else {
+        if (fotoActualImg) fotoActualImg.src = '';
         fotoActualContainer.style.display = 'none';
       }
     }
@@ -955,7 +1015,8 @@
               msgEl.innerHTML = '<span style="color:#28a745;">✅ Foto subida correctamente.</span>';
               const linkContainer = document.getElementById('cliFotoActualContainer');
               const link = document.getElementById('cliFotoActualLink');
-              if (linkContainer && link) { link.href = res.fotoUrl; linkContainer.style.display = 'block'; }
+              const img = document.getElementById('cliFotoActualImg');
+              if (linkContainer && link) { link.href = res.fotoUrl; if (img) img.src = res.fotoUrl; linkContainer.style.display = 'block'; }
               limpiarFotoClienteSeleccionada();
               mostrarClientes();
             } else {
