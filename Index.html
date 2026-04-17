@@ -170,6 +170,7 @@
         <li class="nav-item"><a class="nav-link" onclick="showTab('kits', event)"><span class="nav-icon">🧩</span>Kits</a></li>
         <li class="nav-item"><a class="nav-link" onclick="showTab('checkRentas', event)"><span class="nav-icon">✅</span>Check de Rentas</a></li>
         <li class="nav-item"><a class="nav-link" onclick="showTab('checkVentas', event)"><span class="nav-icon">💰</span>Check de Ventas</a></li>
+        <li class="nav-item"><a class="nav-link" onclick="showTab('depositos', event)"><span class="nav-icon">💳</span>Depósitos</a></li>
         <li class="nav-item"><a class="nav-link" onclick="showTab('movimientos', event)"><span class="nav-icon">📋</span>Movimientos</a></li>
         <li class="nav-item"><a class="nav-link" onclick="showTab('inventario', event)"><span class="nav-icon">📊</span>Inventario</a></li>
         <li class="nav-item"><a class="nav-link" onclick="showTab('reportes', event)"><span class="nav-icon">📈</span>Reportes</a></li>
@@ -527,9 +528,55 @@
         </div>
       </div>
 
+      <!-- Módulo Depósitos -->
+      <div id="depositos" class="tab-content">
+        <div class="content-header"><h2>💳 Módulo Depósitos</h2></div>
+        <div class="content-body">
+          <div class="card">
+            <div class="card-header">Filtros y Listado de Depósitos</div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Estado</label>
+                  <select id="filtroEstadoDep" onchange="listarDepositos()">
+                    <option value="ACTIVOS" selected>Activos</option>
+                    <option value="CANCELADOS">Cancelados</option>
+                    <option value="TODAS">Todos</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Tipo de Pago</label>
+                  <select id="filtroTipoDep" onchange="listarDepositos()">
+                    <option value="">Todos los tipos</option>
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Tarjeta">Tarjeta</option>
+                    <option value="Transferencia">Transferencia</option>
+                    <option value="Cheque">Cheque</option>
+                    <option value="Gratis">Gratis</option>
+                    <option value="Saldo a Favor">Saldo a Favor</option>
+                    <option value="Cargo Especial">Cargo Especial</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Buscar por Venta/Folio</label>
+                  <input id="filtroVentaIdDep" type="text" placeholder="Ej. VENT01" oninput="listarDepositos()">
+                </div>
+              </div>
+              <div class="actions">
+                <button class="btn btn-primary" onclick="listarDepositos()">🔄 Actualizar</button>
+                <button class="btn btn-success" onclick="abrirAgregarDepositoModal()">➕ Agregar Depósito</button>
+                <button class="btn btn-warning" onclick="abrirCargoEspecialModal()">⭐ Cargo Especial</button>
+              </div>
+              <div id="msgDepositos" style="margin-top:8px;"></div>
+              <div class="table-container" style="margin-top:15px;"><div id="tablaDepositos"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Configuración -->
       <div id="configuracion" class="tab-content">
-        <div class="content-header"><h2>Configuración del Sistema</h2></div>
+<div class="content-header"><h2>Configuración del Sistema</h2></div>
         <div class="content-body">
           <div class="card">
             <div class="card-header">Herramientas de Administración</div>
@@ -732,9 +779,11 @@
                     <label>Tipo *</label>
                     <select id="depositoTipo">
                       <option value="Efectivo">Efectivo</option>
+                      <option value="Tarjeta">Tarjeta</option>
                       <option value="Transferencia">Transferencia</option>
                       <option value="Cheque">Cheque</option>
-                      <option value="Otro">Otro</option>
+                      <option value="Gratis">Gratis</option>
+                      <option value="Saldo a Favor">Saldo a Favor</option>
                     </select>
                   </div>
                   <div class="form-group">
@@ -753,6 +802,107 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL AGREGAR / EDITAR DEPÓSITO -->
+  <div id="depFormModal" style="display:none;">
+    <div class="modal-overlay" onclick="cerrarDepFormModal()"></div>
+    <div class="modal-dialog" style="max-width:560px;">
+      <div style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:15px 20px; background:#2E86AB; color:white;">
+          <div style="font-weight:700; font-size:1.1rem;" id="depFormModalTitle">➕ Agregar Depósito</div>
+          <button onclick="cerrarDepFormModal()" style="background:none; border:0; color:white; font-size:20px; cursor:pointer;">✖</button>
+        </div>
+        <div style="padding:25px;">
+          <input type="hidden" id="depFormDepId">
+          <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+            <div class="form-group" style="grid-column:span 2;">
+              <label>Folio / ID de Venta *</label>
+              <input id="depFormVentaId" type="text" placeholder="Ej. VENT01">
+            </div>
+            <div class="form-group">
+              <label>Tipo de Pago *</label>
+              <select id="depFormTipo">
+                <option value="Efectivo">Efectivo</option>
+                <option value="Tarjeta">Tarjeta</option>
+                <option value="Transferencia">Transferencia</option>
+                <option value="Cheque">Cheque</option>
+                <option value="Gratis">Gratis</option>
+                <option value="Saldo a Favor">Saldo a Favor</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Monto *</label>
+              <input id="depFormMonto" type="number" step="0.01" min="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group" style="grid-column:span 2;">
+              <label>Referencia / Nota</label>
+              <input id="depFormComentario" type="text" placeholder="Número de transferencia, nota, etc.">
+            </div>
+          </div>
+          <div class="actions" style="margin-top:10px;">
+            <button class="btn btn-success" onclick="guardarDepFormModal(event)">💾 Guardar</button>
+            <button class="btn btn-secondary" onclick="cerrarDepFormModal()">Cancelar</button>
+          </div>
+          <div id="msgDepForm" style="margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL VER DEPÓSITO -->
+  <div id="depVerModal" style="display:none;">
+    <div class="modal-overlay" onclick="cerrarDepVerModal()"></div>
+    <div class="modal-dialog" style="max-width:520px;">
+      <div style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:15px 20px; background:#17a2b8; color:white;">
+          <div style="font-weight:700; font-size:1.1rem;">🔍 Detalle del Depósito</div>
+          <button onclick="cerrarDepVerModal()" style="background:none; border:0; color:white; font-size:20px; cursor:pointer;">✖</button>
+        </div>
+        <div style="padding:25px;">
+          <div id="depVerContenido"></div>
+          <div class="actions" style="margin-top:15px;">
+            <button class="btn btn-primary" onclick="imprimirTicketPago()">🖨️ Imprimir Ticket</button>
+            <button class="btn btn-secondary" onclick="cerrarDepVerModal()">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CARGO ESPECIAL (SALDO A FAVOR CLIENTE) -->
+  <div id="cargoEspecialModal" style="display:none;">
+    <div class="modal-overlay" onclick="cerrarCargoEspecialModal()"></div>
+    <div class="modal-dialog" style="max-width:500px;">
+      <div style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:15px 20px; background:#ffc107; color:#212529;">
+          <div style="font-weight:700; font-size:1.1rem;">⭐ Cargo Especial — Saldo a Favor del Cliente</div>
+          <button onclick="cerrarCargoEspecialModal()" style="background:none; border:0; color:#212529; font-size:20px; cursor:pointer;">✖</button>
+        </div>
+        <div style="padding:25px;">
+          <p style="font-size:0.9rem; color:#555; margin-bottom:20px;">Registra un anticipo/saldo a favor que el cliente podrá usar para pagar una venta o renta.</p>
+          <div class="form-grid" style="grid-template-columns:1fr;">
+            <div class="form-group">
+              <label>Clave del Cliente *</label>
+              <input id="ceClienteId" type="text" placeholder="Ej. CLI001">
+            </div>
+            <div class="form-group">
+              <label>Monto del Anticipo *</label>
+              <input id="ceMonto" type="number" step="0.01" min="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label>Referencia / Nota</label>
+              <input id="ceComentario" type="text" placeholder="Descripción del anticipo">
+            </div>
+          </div>
+          <div class="actions" style="margin-top:10px;">
+            <button class="btn btn-warning" onclick="guardarCargoEspecial(event)">⭐ Registrar Cargo Especial</button>
+            <button class="btn btn-secondary" onclick="cerrarCargoEspecialModal()">Cancelar</button>
+          </div>
+          <div id="msgCargoEspecial" style="margin-top:8px;"></div>
         </div>
       </div>
     </div>
@@ -849,6 +999,7 @@
       currentTab = tabName;
       if(tabName === 'checkRentas') listarRentas();
       if(tabName === 'checkVentas') listarVentas();
+      if(tabName === 'depositos') listarDepositos();
       if(tabName === 'clientes' && todosLosClientes.length === 0) mostrarClientes();
       if(tabName === 'dashboard') loadDashboard();
       if(tabName === 'kits') { if(!editandoKit) cargarKitCodigo(); cargarKits(); }
@@ -2822,6 +2973,343 @@
           if (msg) msg.innerHTML = '<span style="color:#dc3545">Falla: ' + err + '</span>';
         })
         .subirLogoEmpresa(logoSeleccionado);
+    }
+
+    /* ------------------- MÓDULO DEPÓSITOS ------------------- */
+    let depositoActual = null; // deposit currently in the Ver/Edit modal
+
+    function listarDepositos() {
+      const estado   = document.getElementById('filtroEstadoDep').value;
+      const tipo     = document.getElementById('filtroTipoDep').value;
+      const ventaId  = (document.getElementById('filtroVentaIdDep').value || '').trim();
+      const filtros  = { estado, tipo, ventaId };
+      google.script.run
+        .withSuccessHandler(res => renderTablaDepositos(res || []))
+        .withFailureHandler(err => showMessage('msgDepositos', 'Error al listar: ' + err, 'error'))
+        .listarTodosDepositos(filtros);
+    }
+
+    function renderTablaDepositos(data) {
+      const container = document.getElementById('tablaDepositos');
+      if (!container) return;
+      if (!data || data.length === 0) {
+        container.innerHTML = '<div class="message info">No hay depósitos registrados con los filtros seleccionados.</div>';
+        return;
+      }
+
+      container.innerHTML = `<table id="tablaDepositosTable" class="display" style="width:100%">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Fecha</th>
+            <th>Folio/Venta</th>
+            <th>Cliente</th>
+            <th>Monto</th>
+            <th>Tipo</th>
+            <th>Referencia</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>`;
+
+      if ($.fn.DataTable.isDataTable('#tablaDepositosTable')) { $('#tablaDepositosTable').DataTable().destroy(); }
+
+      $('#tablaDepositosTable').DataTable({
+        data: data,
+        stateSave: false,
+        columns: [
+          { data: null, render: (d, t, r, m) => m.row + 1, orderable: false, width: '40px' },
+          { data: 'fecha', defaultContent: '-' },
+          { data: 'ventaId', defaultContent: '-' },
+          { data: 'cliente', defaultContent: '-' },
+          { data: 'monto', render: v => v > 0 ? '<strong>$' + v.toFixed(2) + '</strong>' : '-' },
+          { data: 'tipo', render: v => `<span class="badge badge-pend">${v}</span>` },
+          { data: 'comentario', defaultContent: '-' },
+          {
+            data: 'estado',
+            render: v => v === 'Cancelado'
+              ? '<span class="badge" style="background:#f8d7da;color:#721c24;">❌ Cancelado</span>'
+              : '<span class="badge badge-ok">✅ Activo</span>'
+          },
+          {
+            data: null,
+            orderable: false,
+            render: function(d, t, row) {
+              const depId = row.depId || '';
+              const activo = row.estado !== 'Cancelado';
+              return `
+                <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                  <button class="btn btn-info" style="padding:3px 7px;font-size:0.78rem;" onclick="verDeposito('${depId}')">👁 Ver</button>
+                  ${depId && activo ? `<button class="btn btn-warning" style="padding:3px 7px;font-size:0.78rem;" onclick="abrirEditarDepositoModal('${depId}')">✏️ Editar</button>` : ''}
+                  ${depId && activo ? `<button class="btn btn-secondary" style="padding:3px 7px;font-size:0.78rem;" onclick="accionCancelarDeposito('${depId}')">🚫 Cancelar</button>` : ''}
+                  ${depId ? `<button class="btn btn-danger" style="padding:3px 7px;font-size:0.78rem;" onclick="accionEliminarDeposito('${depId}')">🗑️ Eliminar</button>` : ''}
+                  ${depId ? `<button class="btn btn-primary" style="padding:3px 7px;font-size:0.78rem;" onclick="imprimirTicketPagoId('${depId}')">🖨️ Ticket</button>` : ''}
+                </div>`;
+            }
+          }
+        ],
+        order: [[1, 'desc']],
+        language: { search: 'Buscar:', lengthMenu: 'Mostrar _MENU_ registros', info: 'Registros _START_ a _END_ de _TOTAL_', paginate: { first: '«', last: '»', next: '›', previous: '‹' } }
+      });
+    }
+
+    /* ---- Agregar Depósito ---- */
+    function abrirAgregarDepositoModal() {
+      document.getElementById('depFormDepId').value = '';
+      document.getElementById('depFormVentaId').value = '';
+      document.getElementById('depFormTipo').value = 'Efectivo';
+      document.getElementById('depFormMonto').value = '';
+      document.getElementById('depFormComentario').value = '';
+      document.getElementById('depFormVentaId').disabled = false;
+      document.getElementById('msgDepForm').innerHTML = '';
+      document.getElementById('depFormModalTitle').textContent = '➕ Agregar Depósito';
+      document.getElementById('depFormModal').style.display = 'block';
+    }
+
+    function cerrarDepFormModal() {
+      document.getElementById('depFormModal').style.display = 'none';
+    }
+
+    function guardarDepFormModal(event) {
+      const btn = event.target;
+      const depId    = document.getElementById('depFormDepId').value;
+      const ventaId  = document.getElementById('depFormVentaId').value.trim();
+      const tipo     = document.getElementById('depFormTipo').value;
+      const monto    = parseFloat(document.getElementById('depFormMonto').value);
+      const comentario = document.getElementById('depFormComentario').value.trim();
+
+      if (!depId && !ventaId) { showMessage('msgDepForm', 'Ingrese el Folio/ID de la venta.', 'warning'); return; }
+      if (!monto || monto <= 0) { showMessage('msgDepForm', 'Ingrese un monto válido mayor a cero.', 'warning'); return; }
+
+      btn.disabled = true; btn.textContent = 'Guardando...';
+
+      if (depId) {
+        // Edit mode
+        const payload = { depId, tipo, monto, comentario };
+        google.script.run.withSuccessHandler(res => {
+          btn.disabled = false; btn.textContent = '💾 Guardar';
+          if (res.ok) {
+            showMessage('msgDepForm', 'Depósito actualizado correctamente.', 'success');
+            setTimeout(() => { cerrarDepFormModal(); listarDepositos(); }, 1500);
+          } else {
+            showMessage('msgDepForm', 'Error: ' + (res.error || 'desconocido'), 'error');
+          }
+        }).withFailureHandler(err => {
+          btn.disabled = false; btn.textContent = '💾 Guardar';
+          showMessage('msgDepForm', 'Error de red: ' + err, 'error');
+        }).editarDeposito(payload);
+      } else {
+        // Add mode
+        const payload = { ventaId, tipo, monto, comentario };
+        google.script.run.withSuccessHandler(res => {
+          btn.disabled = false; btn.textContent = '💾 Guardar';
+          if (res.ok) {
+            showMessage('msgDepForm', 'Depósito registrado exitosamente.', 'success');
+            setTimeout(() => { cerrarDepFormModal(); listarDepositos(); }, 1500);
+          } else {
+            showMessage('msgDepForm', 'Error: ' + (res.error || 'desconocido'), 'error');
+          }
+        }).withFailureHandler(err => {
+          btn.disabled = false; btn.textContent = '💾 Guardar';
+          showMessage('msgDepForm', 'Error de red: ' + err, 'error');
+        }).registrarDeposito(payload);
+      }
+    }
+
+    /* ---- Editar Depósito ---- */
+    function abrirEditarDepositoModal(depId) {
+      google.script.run.withSuccessHandler(dep => {
+        if (!dep) { showMessage('msgDepositos', 'No se encontró el depósito.', 'error'); return; }
+        document.getElementById('depFormDepId').value = dep.depId;
+        document.getElementById('depFormVentaId').value = dep.ventaId;
+        document.getElementById('depFormVentaId').disabled = true;
+        document.getElementById('depFormTipo').value = dep.tipo;
+        document.getElementById('depFormMonto').value = dep.monto;
+        document.getElementById('depFormComentario').value = dep.comentario || '';
+        document.getElementById('msgDepForm').innerHTML = '';
+        document.getElementById('depFormModalTitle').textContent = '✏️ Editar Depósito: ' + dep.depId;
+        document.getElementById('depFormModal').style.display = 'block';
+      }).withFailureHandler(err => showMessage('msgDepositos', 'Error: ' + err, 'error'))
+      .obtenerDepositoPorId(depId);
+    }
+
+    /* ---- Ver Depósito ---- */
+    function verDeposito(depId) {
+      google.script.run.withSuccessHandler(dep => {
+        if (!dep) { showMessage('msgDepositos', 'No se encontró el depósito.', 'error'); return; }
+        depositoActual = dep;
+        const estadoHtml = dep.estado === 'Cancelado'
+          ? '<span style="color:#dc3545;font-weight:700;">❌ Cancelado</span>'
+          : '<span style="color:#28a745;font-weight:700;">✅ Activo</span>';
+        document.getElementById('depVerContenido').innerHTML = `
+          <div style="background:#f0faf0;padding:15px;border-radius:8px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div><strong>ID Depósito:</strong><br><code>${dep.depId}</code></div>
+              <div><strong>Estado:</strong><br>${estadoHtml}</div>
+              <div><strong>Folio / Venta:</strong><br>${dep.ventaId || '-'}</div>
+              <div><strong>Fecha:</strong><br>${dep.fecha || '-'}</div>
+              <div><strong>Monto:</strong><br><span style="font-size:1.3em;font-weight:700;color:#17a2b8;">$${dep.monto.toFixed(2)}</span></div>
+              <div><strong>Tipo de Pago:</strong><br><span class="badge badge-pend">${dep.tipo}</span></div>
+              <div><strong>Referencia:</strong><br>${dep.comentario || '-'}</div>
+              <div><strong>Usuario:</strong><br>${dep.usuario || '-'}</div>
+            </div>
+          </div>`;
+        document.getElementById('depVerModal').style.display = 'block';
+      }).withFailureHandler(err => showMessage('msgDepositos', 'Error: ' + err, 'error'))
+      .obtenerDepositoPorId(depId);
+    }
+
+    function cerrarDepVerModal() {
+      document.getElementById('depVerModal').style.display = 'none';
+      depositoActual = null;
+    }
+
+    /* ---- Cancelar Depósito ---- */
+    function accionCancelarDeposito(depId) {
+      if (!confirm('¿Seguro que desea CANCELAR este depósito?\nEsto lo marcará como Cancelado y no contará para el saldo.')) return;
+      google.script.run.withSuccessHandler(res => {
+        if (res.ok) {
+          showMessage('msgDepositos', 'Depósito cancelado correctamente.', 'success');
+          listarDepositos();
+        } else {
+          showMessage('msgDepositos', 'Error: ' + (res.error || 'desconocido'), 'error');
+        }
+      }).withFailureHandler(err => showMessage('msgDepositos', 'Error de red: ' + err, 'error'))
+      .cancelarDeposito(depId);
+    }
+
+    /* ---- Eliminar Depósito ---- */
+    function accionEliminarDeposito(depId) {
+      if (!confirm('¿Seguro que desea ELIMINAR este depósito de forma permanente?\nEsta acción no se puede deshacer.')) return;
+      google.script.run.withSuccessHandler(res => {
+        if (res.ok) {
+          showMessage('msgDepositos', 'Depósito eliminado.', 'success');
+          listarDepositos();
+        } else {
+          showMessage('msgDepositos', 'Error: ' + (res.error || 'desconocido'), 'error');
+        }
+      }).withFailureHandler(err => showMessage('msgDepositos', 'Error de red: ' + err, 'error'))
+      .eliminarDeposito(depId);
+    }
+
+    /* ---- Cargo Especial ---- */
+    function abrirCargoEspecialModal() {
+      document.getElementById('ceClienteId').value = '';
+      document.getElementById('ceMonto').value = '';
+      document.getElementById('ceComentario').value = '';
+      document.getElementById('msgCargoEspecial').innerHTML = '';
+      document.getElementById('cargoEspecialModal').style.display = 'block';
+    }
+
+    function cerrarCargoEspecialModal() {
+      document.getElementById('cargoEspecialModal').style.display = 'none';
+    }
+
+    function guardarCargoEspecial(event) {
+      const btn = event.target;
+      const clienteId  = document.getElementById('ceClienteId').value.trim();
+      const monto      = parseFloat(document.getElementById('ceMonto').value);
+      const comentario = document.getElementById('ceComentario').value.trim();
+
+      if (!clienteId) { showMessage('msgCargoEspecial', 'Ingrese la clave del cliente.', 'warning'); return; }
+      if (!monto || monto <= 0) { showMessage('msgCargoEspecial', 'Ingrese un monto válido mayor a cero.', 'warning'); return; }
+
+      btn.disabled = true; btn.textContent = 'Guardando...';
+      const payload = { clienteId, monto, comentario };
+
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false; btn.textContent = '⭐ Registrar Cargo Especial';
+        if (res.ok) {
+          showMessage('msgCargoEspecial', `Cargo Especial registrado. Saldo a favor actualizado para cliente ${clienteId}.`, 'success');
+          setTimeout(() => { cerrarCargoEspecialModal(); listarDepositos(); }, 2000);
+        } else {
+          showMessage('msgCargoEspecial', 'Error: ' + (res.error || 'desconocido'), 'error');
+        }
+      }).withFailureHandler(err => {
+        btn.disabled = false; btn.textContent = '⭐ Registrar Cargo Especial';
+        showMessage('msgCargoEspecial', 'Error de red: ' + err, 'error');
+      }).registrarCargoEspecial(payload);
+    }
+
+    /* ---- Imprimir Ticket de Pago ---- */
+    function imprimirTicketPago() {
+      if (!depositoActual) return;
+      imprimirTicketPagoData(depositoActual);
+    }
+
+    function imprimirTicketPagoId(depId) {
+      google.script.run.withSuccessHandler(dep => {
+        if (!dep) { alert('No se encontró el depósito.'); return; }
+        imprimirTicketPagoData(dep);
+      }).obtenerDepositoPorId(depId);
+    }
+
+    function imprimirTicketPagoData(dep) {
+      google.script.run.withSuccessHandler(param => {
+        const p = param || {};
+        const logoBase = (p.logoUrl || 'https://lh3.googleusercontent.com/d/1e9ki2xO6zgPsnCYEijV0VqI8szbCxIlY');
+        const logoUrl  = logoBase + (logoBase.includes('?') ? '&' : '?') + 'v=' + Date.now();
+        const empresaNombre = p.nombre || 'MI EMPRESA';
+        const empresaRFC    = p.rfc || '';
+        const empresaDir    = [p.direccion, p.colonia, p.ciudad, p.estado].filter(Boolean).join(', ');
+        const empresaTel    = p.telefono || '';
+
+        const estadoHtml = dep.estado === 'Cancelado'
+          ? '<span style="color:#dc3545;font-weight:700;">CANCELADO</span>'
+          : '<span style="color:#28a745;font-weight:700;">ACTIVO</span>';
+
+        const ventana = window.open('', '_blank');
+        ventana.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Ticket de Pago ${dep.depId || ''}</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #000; margin: 0; padding: 20px; max-width: 400px; }
+    .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 10px; }
+    .logo { max-width: 100px; max-height: 70px; }
+    .empresa { font-size: 14px; font-weight: bold; margin: 5px 0; }
+    .titulo { font-size: 18px; font-weight: bold; text-align: center; margin: 12px 0; letter-spacing: 2px; border: 2px solid #000; padding: 6px; }
+    .row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #ccc; }
+    .row strong { color: #333; }
+    .monto-big { font-size: 24px; font-weight: bold; text-align: center; color: #2E86AB; margin: 14px 0; }
+    .footer { text-align: center; margin-top: 20px; font-size: 10px; color: #666; border-top: 1px solid #ccc; padding-top: 8px; }
+    @media print { .no-print { display: none !important; } body { padding: 0; } }
+  </style>
+</head>
+<body>
+  <button class="no-print" onclick="window.print()" style="padding:8px 16px;margin-bottom:16px;font-size:13px;cursor:pointer;background:#2E86AB;color:white;border:none;border-radius:6px;">🖨️ IMPRIMIR</button>
+  <div class="header">
+    <img src="${logoUrl}" class="logo" onerror="this.style.display='none'"><br>
+    <div class="empresa">${empresaNombre}</div>
+    ${empresaDir ? `<div style="font-size:10px;">${empresaDir}</div>` : ''}
+    ${empresaRFC  ? `<div style="font-size:10px;">RFC: ${empresaRFC}</div>` : ''}
+    ${empresaTel  ? `<div style="font-size:10px;">Tel: ${empresaTel}</div>` : ''}
+  </div>
+
+  <div class="titulo">🧾 TICKET DE PAGO</div>
+
+  <div class="row"><strong>ID Depósito:</strong><span>${dep.depId || '-'}</span></div>
+  <div class="row"><strong>Folio / Venta:</strong><span>${dep.ventaId || '-'}</span></div>
+  <div class="row"><strong>Fecha:</strong><span>${dep.fecha || '-'}</span></div>
+  <div class="row"><strong>Tipo de Pago:</strong><span>${dep.tipo || '-'}</span></div>
+  <div class="row"><strong>Referencia:</strong><span>${dep.comentario || '-'}</span></div>
+  <div class="row"><strong>Estado:</strong><span>${estadoHtml}</span></div>
+  <div class="row"><strong>Registrado por:</strong><span>${dep.usuario || '-'}</span></div>
+
+  <div class="monto-big">$${(dep.monto || 0).toFixed(2)}</div>
+
+  <div class="footer">
+    <div>Impreso: ${new Date().toLocaleString()}</div>
+    <div style="margin-top:40px; border-top:1px solid #000; width:60%; margin-left:auto; margin-right:auto; padding-top:5px;">Firma / Sello</div>
+    <div style="font-size:9px; margin-top:8px;">DOCUMENTO DE CONTROL INTERNO</div>
+  </div>
+</body>
+</html>`);
+        ventana.document.close();
+      }).obtenerParametros();
     }
   </script>
 </body>
