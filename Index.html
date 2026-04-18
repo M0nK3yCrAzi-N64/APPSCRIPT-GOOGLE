@@ -170,6 +170,7 @@
         <li class="nav-item"><a class="nav-link" onclick="showTab('kits', event)"><span class="nav-icon">🧩</span>Kits</a></li>
         <li class="nav-item"><a class="nav-link" onclick="showTab('checkRentas', event)"><span class="nav-icon">✅</span>Check de Rentas</a></li>
         <li class="nav-item"><a class="nav-link" onclick="showTab('checkVentas', event)"><span class="nav-icon">💰</span>Check de Ventas</a></li>
+        <li class="nav-item"><a class="nav-link" onclick="showTab('depositos', event)"><span class="nav-icon">🏦</span>Depósitos</a></li>
         <li class="nav-item"><a class="nav-link" onclick="showTab('movimientos', event)"><span class="nav-icon">📋</span>Movimientos</a></li>
         <li class="nav-item"><a class="nav-link" onclick="showTab('inventario', event)"><span class="nav-icon">📊</span>Inventario</a></li>
         <li class="nav-item"><a class="nav-link" onclick="showTab('reportes', event)"><span class="nav-icon">📈</span>Reportes</a></li>
@@ -544,6 +545,51 @@
         </div>
       </div>
 
+      <!-- Módulo Depósitos -->
+      <div id="depositos" class="tab-content">
+        <div class="content-header"><h2>Módulo de Depósitos</h2></div>
+        <div class="content-body">
+          <div class="card">
+            <div class="card-header">Listado de Depósitos</div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Buscar por Venta ID</label>
+                  <input id="depFiltroVentaId" type="text" placeholder="Ej. VENT01">
+                </div>
+                <div class="form-group">
+                  <label>Filtrar por Tipo</label>
+                  <select id="depFiltroTipo">
+                    <option value="">Todos</option>
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Tarjeta">Tarjeta</option>
+                    <option value="Transferencia">Transferencia</option>
+                    <option value="Cheque">Cheque</option>
+                    <option value="Gratis">Gratis</option>
+                    <option value="Saldo a Favor">Saldo a Favor</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Filtrar por Estado</label>
+                  <select id="depFiltroEstado">
+                    <option value="ACTIVO">Activos</option>
+                    <option value="CANCELADO">Cancelados</option>
+                    <option value="">Todos</option>
+                  </select>
+                </div>
+              </div>
+              <div class="actions">
+                <button class="btn btn-primary" onclick="listarDepositos()">🔄 Actualizar lista</button>
+                <button class="btn btn-success" onclick="abrirModalDeposito(null)">➕ Agregar Depósito</button>
+                <button class="btn btn-warning" onclick="abrirCargoEspecialModal()">⭐ Cargo Especial</button>
+              </div>
+              <div id="msgDepositos" style="margin-top:8px;"></div>
+              <div class="table-container" style="margin-top:15px;"><div id="tablaDepositos"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -732,9 +778,11 @@
                     <label>Tipo *</label>
                     <select id="depositoTipo">
                       <option value="Efectivo">Efectivo</option>
+                      <option value="Tarjeta">Tarjeta</option>
                       <option value="Transferencia">Transferencia</option>
                       <option value="Cheque">Cheque</option>
-                      <option value="Otro">Otro</option>
+                      <option value="Gratis">Gratis</option>
+                      <option value="Saldo a Favor">Saldo a Favor</option>
                     </select>
                   </div>
                   <div class="form-group">
@@ -759,5 +807,130 @@
   </div>
 
   <?!= HtmlService.createHtmlOutputFromFile("JavaScript").getContent(); ?>
+
+  <!-- MODAL AGREGAR / EDITAR DEPÓSITO -->
+  <div id="depositoFormModal" style="display:none;">
+    <div class="modal-overlay" onclick="cerrarModalDeposito()"></div>
+    <div class="modal-dialog" style="max-width:520px;">
+      <div style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:15px 20px; background:#2E86AB; color:white;">
+          <div style="font-weight:700; font-size:1.1rem;" id="depositoFormModalTitle">➕ Agregar Depósito</div>
+          <button onclick="cerrarModalDeposito()" style="background:none; border:0; color:white; font-size:20px; cursor:pointer;">✖</button>
+        </div>
+        <div style="padding:25px;">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Venta ID *</label>
+              <input id="depFormVentaId" type="text" placeholder="Ej. VENT01" style="text-transform:uppercase;">
+            </div>
+            <div class="form-group">
+              <label>Tipo de Pago *</label>
+              <select id="depFormTipo" onchange="onDepFormTipoChange()">
+                <option value="Efectivo">Efectivo</option>
+                <option value="Tarjeta">Tarjeta</option>
+                <option value="Transferencia">Transferencia</option>
+                <option value="Cheque">Cheque</option>
+                <option value="Gratis">Gratis</option>
+                <option value="Saldo a Favor">Saldo a Favor</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Monto *</label>
+              <input id="depFormMonto" type="number" step="0.01" min="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label>Referencia / Nota</label>
+              <input id="depFormComentario" type="text" placeholder="Número de transferencia, etc.">
+            </div>
+          </div>
+          <div id="depFormSaldoFavor" style="display:none; background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:10px; margin-bottom:12px; font-size:0.9rem;">
+            <strong>⚠️ Saldo a Favor disponible del cliente:</strong> <span id="depFormSaldoFavorMonto">$0.00</span>
+          </div>
+          <input type="hidden" id="depFormDepId">
+          <div class="actions">
+            <button class="btn btn-success" onclick="guardarDepositoDesdeModulo(event)">💾 Guardar</button>
+            <button class="btn btn-secondary" onclick="cerrarModalDeposito()">Cancelar</button>
+          </div>
+          <div id="msgDepositoForm" style="margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL VER DEPÓSITO -->
+  <div id="depositoVerModal" style="display:none;">
+    <div class="modal-overlay" onclick="cerrarVerDepositoModal()"></div>
+    <div class="modal-dialog" style="max-width:480px;">
+      <div style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:15px 20px; background:#2E86AB; color:white;">
+          <div style="font-weight:700; font-size:1.1rem;">🔍 Detalle de Depósito</div>
+          <button onclick="cerrarVerDepositoModal()" style="background:none; border:0; color:white; font-size:20px; cursor:pointer;">✖</button>
+        </div>
+        <div style="padding:25px;">
+          <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+            <tr><td style="padding:8px 5px; color:#6c757d; font-weight:600; white-space:nowrap;">🔑 ID Depósito</td><td id="vdDepId" style="padding:8px 5px;"></td></tr>
+            <tr style="background:#F8FBFD;"><td style="padding:8px 5px; color:#6c757d; font-weight:600; white-space:nowrap;">📋 Venta ID</td><td id="vdVentaId" style="padding:8px 5px;"></td></tr>
+            <tr><td style="padding:8px 5px; color:#6c757d; font-weight:600; white-space:nowrap;">👤 Cliente</td><td id="vdCliente" style="padding:8px 5px;"></td></tr>
+            <tr style="background:#F8FBFD;"><td style="padding:8px 5px; color:#6c757d; font-weight:600; white-space:nowrap;">📅 Fecha</td><td id="vdFecha" style="padding:8px 5px;"></td></tr>
+            <tr><td style="padding:8px 5px; color:#6c757d; font-weight:600; white-space:nowrap;">💵 Monto</td><td id="vdMonto" style="padding:8px 5px;"></td></tr>
+            <tr style="background:#F8FBFD;"><td style="padding:8px 5px; color:#6c757d; font-weight:600; white-space:nowrap;">💳 Tipo</td><td id="vdTipo" style="padding:8px 5px;"></td></tr>
+            <tr><td style="padding:8px 5px; color:#6c757d; font-weight:600; white-space:nowrap;">📝 Referencia</td><td id="vdComentario" style="padding:8px 5px;"></td></tr>
+            <tr style="background:#F8FBFD;"><td style="padding:8px 5px; color:#6c757d; font-weight:600; white-space:nowrap;">👤 Usuario</td><td id="vdUsuario" style="padding:8px 5px;"></td></tr>
+            <tr><td style="padding:8px 5px; color:#6c757d; font-weight:600; white-space:nowrap;">⚡ Estado</td><td id="vdEstado" style="padding:8px 5px;"></td></tr>
+          </table>
+          <div style="text-align:center; margin-top:20px;">
+            <button onclick="cerrarVerDepositoModal()" class="btn btn-secondary" style="padding:8px 20px;">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CARGO ESPECIAL -->
+  <div id="cargoEspecialModal" style="display:none;">
+    <div class="modal-overlay" onclick="cerrarCargoEspecialModal()"></div>
+    <div class="modal-dialog" style="max-width:600px;">
+      <div style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:15px 20px; background:#d4a017; color:white;">
+          <div style="font-weight:700; font-size:1.1rem;">⭐ Cargo Especial – Saldo a Favor</div>
+          <button onclick="cerrarCargoEspecialModal()" style="background:none; border:0; color:white; font-size:20px; cursor:pointer;">✖</button>
+        </div>
+        <div style="padding:25px;">
+          <p style="color:#6c757d; font-size:0.9rem; margin-bottom:16px;">Registra un abono de <strong>Saldo a Favor</strong> para un cliente. Este saldo podrá utilizarse como método de pago en ventas o rentas.</p>
+          <div class="form-grid">
+            <div class="form-group" style="grid-column:span 2;">
+              <label>Cliente *</label>
+              <input id="ceClienteClave" type="text" placeholder="Clave del cliente" style="text-transform:uppercase;" oninput="onCeClienteChange()">
+            </div>
+            <div class="form-group" style="grid-column:span 2;">
+              <div id="ceSaldoActual" style="display:none; background:#e8f4f8; border-radius:6px; padding:10px; font-size:0.9rem;">
+                <strong>Saldo a Favor actual:</strong> <span id="ceSaldoActualMonto" style="color:#17a2b8; font-weight:700;"></span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Monto *</label>
+              <input id="ceMonto" type="number" step="0.01" min="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label>Concepto / Motivo</label>
+              <input id="ceConcepto" type="text" placeholder="Anticipo, abono, etc.">
+            </div>
+          </div>
+
+          <!-- Historial de Cargos Especiales del cliente -->
+          <div id="ceHistorialSection" style="display:none; margin-top:16px;">
+            <div style="font-weight:600; color:#2E86AB; margin-bottom:8px;">📋 Historial de Cargos Especiales</div>
+            <div id="ceHistorialTabla" class="table-container"></div>
+          </div>
+
+          <div class="actions" style="margin-top:16px;">
+            <button class="btn btn-success" onclick="guardarCargoEspecialUI(event)">💾 Registrar Cargo Especial</button>
+            <button class="btn btn-secondary" onclick="cerrarCargoEspecialModal()">Cancelar</button>
+          </div>
+          <div id="msgCargoEspecial" style="margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
