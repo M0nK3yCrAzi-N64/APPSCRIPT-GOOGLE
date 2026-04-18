@@ -2346,7 +2346,7 @@
           document.getElementById('ceSaldoActual').style.display = 'none';
           document.getElementById('ceHistorialSection').style.display = 'none';
         }
-      }, 400);
+      }, 300);
     }
 
     function guardarCargoEspecialUI(event) {
@@ -2380,7 +2380,6 @@
       if (!confirm('¿Seguro que desea cancelar este Cargo Especial?')) return;
       google.script.run.withSuccessHandler(res => {
         if (res.ok) {
-          const clave = (document.getElementById('ceClienteClave').value || '').trim().toUpperCase();
           showMessage('msgCargoEspecial', 'Cargo cancelado correctamente.', 'success');
           onCeClienteChange();
         } else {

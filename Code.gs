@@ -1196,12 +1196,16 @@ function guardarCheckVenta(payload) {
 /* ------------------- DEPÓSITOS DE VENTAS ------------------- */
 const HOJA_CARGO_ESPECIAL = "CARGO_ESPECIAL";
 
+function _generarIdUnico_(prefijo) {
+  return prefijo + '-' + new Date().getTime() + '-' + Math.floor(Math.random() * 9000 + 1000);
+}
+
 function _generarDepId_() {
-  return 'DEP-' + new Date().getTime() + '-' + Math.floor(Math.random() * 9000 + 1000);
+  return _generarIdUnico_('DEP');
 }
 
 function _generarCeId_() {
-  return 'CE-' + new Date().getTime() + '-' + Math.floor(Math.random() * 9000 + 1000);
+  return _generarIdUnico_('CE');
 }
 
 function _asegurarHojaDepositos_(ss) {
