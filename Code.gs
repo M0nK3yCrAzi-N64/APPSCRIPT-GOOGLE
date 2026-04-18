@@ -76,6 +76,7 @@ function doGet() {
   return HtmlService.createTemplateFromFile("Index")
     .evaluate()
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+    .setSandboxMode(HtmlService.SandboxMode.IFRAME)
     .setTitle("Sistema de Control de Inventario");
 }
 
