@@ -73,7 +73,7 @@ function esSalida(tipo) { return TIPOS_SALIDA.has(tipo); }
 
 /** WEB APP */
 function doGet() {
-  return HtmlService.createHtmlOutputFromFile("index")
+  return HtmlService.createTemplateFromFile("Index").evaluate()
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .setTitle("Sistema de Control de Inventario");
 }
