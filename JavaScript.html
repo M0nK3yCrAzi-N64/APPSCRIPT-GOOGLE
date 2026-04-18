@@ -89,6 +89,7 @@
       currentTab = tabName;
       if(tabName === 'checkRentas') listarRentas();
       if(tabName === 'checkVentas') listarVentas();
+      if(tabName === 'depositos') listarDepositos();
       if(tabName === 'clientes' && todosLosClientes.length === 0) mostrarClientes();
       if(tabName === 'dashboard') loadDashboard();
       if(tabName === 'kits') { if(!editandoKit) cargarKitCodigo(); cargarKits(); }
@@ -2062,5 +2063,330 @@
           if (msg) msg.innerHTML = '<span style="color:#dc3545">Falla: ' + err + '</span>';
         })
         .subirLogoEmpresa(logoSeleccionado);
+    }
+
+    /* ------------------- MÓDULO DEPÓSITOS ------------------- */
+
+    function listarDepositos() {
+      const ventaId = (document.getElementById('depFiltroVentaId').value || '').trim();
+      const tipo = document.getElementById('depFiltroTipo').value;
+      const estado = document.getElementById('depFiltroEstado').value;
+      const filtros = { ventaId, tipo, estado };
+      google.script.run
+        .withSuccessHandler(res => renderTablaDepositos(res || []))
+        .withFailureHandler(err => showMessage('msgDepositos', 'Error al listar: ' + err, 'error'))
+        .listarTodosDepositos(filtros);
+    }
+
+    function renderTablaDepositos(data) {
+      const container = document.getElementById('tablaDepositos');
+      if (!container) return;
+      if (!data || data.length === 0) {
+        container.innerHTML = '<div class="message info">No hay depósitos con el filtro seleccionado.</div>';
+        return;
+      }
+
+      container.innerHTML = `<table id="tablaDepositosTable" class="display" style="width:100%">
+        <thead>
+          <tr>
+            <th>ID Depósito</th>
+            <th>Venta ID</th>
+            <th>Cliente</th>
+            <th>Fecha</th>
+            <th>Monto</th>
+            <th>Tipo</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>`;
+
+      if ($.fn.DataTable.isDataTable('#tablaDepositosTable')) { $('#tablaDepositosTable').DataTable().destroy(); }
+
+      $('#tablaDepositosTable').DataTable({
+        data: data,
+        stateSave: true,
+        columns: [
+          { data: 'depId', render: v => `<span style="font-size:0.8em;color:#6c757d;">${v || '-'}</span>` },
+          { data: 'ventaId', defaultContent: '-' },
+          { data: 'clienteNombre', defaultContent: '-' },
+          { data: 'fecha', defaultContent: '-' },
+          { data: 'monto', render: v => '$' + (v || 0).toFixed(2) },
+          {
+            data: 'tipo',
+            render: v => {
+              const colores = { 'Efectivo': '#28a745', 'Tarjeta': '#007bff', 'Transferencia': '#17a2b8', 'Cheque': '#6f42c1', 'Gratis': '#20c997', 'Saldo a Favor': '#fd7e14' };
+              const color = colores[v] || '#6c757d';
+              return `<span class="badge" style="background:${color};color:#fff;padding:3px 8px;border-radius:4px;">${v || '-'}</span>`;
+            }
+          },
+          {
+            data: 'estado',
+            render: v => v === 'CANCELADO'
+              ? '<span class="badge badge-vencida">✖ Cancelado</span>'
+              : '<span class="badge badge-ok">✅ Activo</span>'
+          },
+          {
+            data: null,
+            orderable: false,
+            render: function(d, type, row) {
+              const esCancelado = row.estado === 'CANCELADO';
+              return `<div style="display:flex;gap:4px;flex-wrap:wrap;">
+                <button class="btn btn-info" style="padding:3px 7px;font-size:0.78rem" onclick="verDepositoDetalle('${row.depId}')">👁 Ver</button>
+                ${!esCancelado ? `<button class="btn btn-warning" style="padding:3px 7px;font-size:0.78rem" onclick="abrirModalDeposito('${row.depId}')">✏️ Editar</button>` : ''}
+                ${!esCancelado ? `<button class="btn btn-secondary" style="padding:3px 7px;font-size:0.78rem" onclick="cancelarDepositoUI('${row.depId}')">🚫 Cancelar</button>` : ''}
+                <button class="btn btn-danger" style="padding:3px 7px;font-size:0.78rem" onclick="eliminarDepositoUI('${row.depId}')">🗑 Eliminar</button>
+              </div>`;
+            }
+          }
+        ],
+        order: [[3, 'desc']]
+      });
+    }
+
+    function abrirModalDeposito(depId) {
+      const modal = document.getElementById('depositoFormModal');
+      const title = document.getElementById('depositoFormModalTitle');
+      document.getElementById('depFormDepId').value = depId || '';
+      document.getElementById('depFormVentaId').value = '';
+      document.getElementById('depFormTipo').value = 'Efectivo';
+      document.getElementById('depFormMonto').value = '';
+      document.getElementById('depFormComentario').value = '';
+      document.getElementById('msgDepositoForm').innerHTML = '';
+      document.getElementById('depFormSaldoFavor').style.display = 'none';
+
+      if (depId) {
+        title.textContent = '✏️ Editar Depósito';
+        document.getElementById('depFormVentaId').readOnly = true;
+        google.script.run.withSuccessHandler(dep => {
+          if (!dep) { showMessage('msgDepositos', 'Depósito no encontrado', 'error'); return; }
+          document.getElementById('depFormVentaId').value = dep.ventaId;
+          document.getElementById('depFormTipo').value = dep.tipo;
+          document.getElementById('depFormMonto').value = dep.monto;
+          document.getElementById('depFormComentario').value = dep.comentario;
+          modal.style.display = 'block';
+        }).withFailureHandler(() => showMessage('msgDepositos', 'Error al cargar depósito', 'error'))
+        .obtenerDepositoPorDepId(depId);
+      } else {
+        title.textContent = '➕ Agregar Depósito';
+        document.getElementById('depFormVentaId').readOnly = false;
+        modal.style.display = 'block';
+      }
+    }
+
+    function cerrarModalDeposito() {
+      document.getElementById('depositoFormModal').style.display = 'none';
+    }
+
+    function onDepFormTipoChange() {
+      const tipo = document.getElementById('depFormTipo').value;
+      const saldoDiv = document.getElementById('depFormSaldoFavor');
+      if (tipo === 'Saldo a Favor') {
+        // Try to look up client's balance from ventaId
+        const ventaId = (document.getElementById('depFormVentaId').value || '').trim().toUpperCase();
+        if (ventaId) {
+          google.script.run.withSuccessHandler(venta => {
+            if (venta && venta.clienteClave) {
+              google.script.run.withSuccessHandler(saldo => {
+                document.getElementById('depFormSaldoFavorMonto').textContent = '$' + (saldo || 0).toFixed(2);
+                saldoDiv.style.display = 'block';
+              }).obtenerSaldoFavorCliente(venta.clienteClave);
+            }
+          }).obtenerVentaPorId(ventaId);
+        } else {
+          saldoDiv.style.display = 'none';
+        }
+      } else {
+        saldoDiv.style.display = 'none';
+      }
+    }
+
+    function guardarDepositoDesdeModulo(event) {
+      const btn = event.target;
+      const depId = document.getElementById('depFormDepId').value.trim();
+      const ventaId = document.getElementById('depFormVentaId').value.trim().toUpperCase();
+      const tipo = document.getElementById('depFormTipo').value;
+      const monto = parseFloat(document.getElementById('depFormMonto').value);
+      const comentario = document.getElementById('depFormComentario').value.trim();
+
+      if (!ventaId) { showMessage('msgDepositoForm', 'Ingrese un Venta ID.', 'warning'); return; }
+      if (!monto || monto <= 0) { showMessage('msgDepositoForm', 'Ingrese un monto válido mayor a cero.', 'warning'); return; }
+
+      btn.disabled = true; btn.textContent = 'Guardando...';
+
+      if (depId) {
+        // Edit existing
+        google.script.run.withSuccessHandler(res => {
+          btn.disabled = false; btn.textContent = '💾 Guardar';
+          if (res.ok) {
+            showMessage('msgDepositos', 'Depósito actualizado correctamente.', 'success');
+            cerrarModalDeposito();
+            listarDepositos();
+          } else {
+            showMessage('msgDepositoForm', 'Error: ' + (res.error || 'desconocido'), 'error');
+          }
+        }).withFailureHandler(err => {
+          btn.disabled = false; btn.textContent = '💾 Guardar';
+          showMessage('msgDepositoForm', 'Error de red: ' + err, 'error');
+        }).editarDeposito({ depId, monto, tipo, comentario });
+      } else {
+        // New deposit
+        google.script.run.withSuccessHandler(res => {
+          btn.disabled = false; btn.textContent = '💾 Guardar';
+          if (res.ok) {
+            showMessage('msgDepositos', 'Depósito registrado correctamente.', 'success');
+            cerrarModalDeposito();
+            listarDepositos();
+          } else {
+            showMessage('msgDepositoForm', 'Error: ' + (res.error || 'desconocido'), 'error');
+          }
+        }).withFailureHandler(err => {
+          btn.disabled = false; btn.textContent = '💾 Guardar';
+          showMessage('msgDepositoForm', 'Error de red: ' + err, 'error');
+        }).registrarDeposito({ ventaId, monto, tipo, comentario });
+      }
+    }
+
+    function verDepositoDetalle(depId) {
+      google.script.run.withSuccessHandler(dep => {
+        if (!dep) { showMessage('msgDepositos', 'Depósito no encontrado', 'error'); return; }
+        document.getElementById('vdDepId').textContent = dep.depId || '-';
+        document.getElementById('vdVentaId').textContent = dep.ventaId || '-';
+        document.getElementById('vdCliente').textContent = dep.clienteNombre || dep.clienteClave || '-';
+        document.getElementById('vdFecha').textContent = dep.fecha || '-';
+        document.getElementById('vdMonto').textContent = '$' + (dep.monto || 0).toFixed(2);
+        document.getElementById('vdTipo').textContent = dep.tipo || '-';
+        document.getElementById('vdComentario').textContent = dep.comentario || '-';
+        document.getElementById('vdUsuario').textContent = dep.usuario || '-';
+        document.getElementById('vdEstado').textContent = dep.estado || '-';
+        document.getElementById('depositoVerModal').style.display = 'block';
+      }).withFailureHandler(err => showMessage('msgDepositos', 'Error: ' + err, 'error'))
+      .obtenerDepositoPorDepId(depId);
+    }
+
+    function cerrarVerDepositoModal() {
+      document.getElementById('depositoVerModal').style.display = 'none';
+    }
+
+    function cancelarDepositoUI(depId) {
+      if (!confirm('¿Seguro que desea CANCELAR este depósito? El monto ya no contará para el saldo de la venta.')) return;
+      google.script.run.withSuccessHandler(res => {
+        if (res.ok) {
+          showMessage('msgDepositos', 'Depósito cancelado correctamente.', 'success');
+          listarDepositos();
+        } else {
+          showMessage('msgDepositos', 'Error: ' + (res.error || 'desconocido'), 'error');
+        }
+      }).withFailureHandler(err => showMessage('msgDepositos', 'Error de red: ' + err, 'error'))
+      .cancelarDeposito(depId);
+    }
+
+    function eliminarDepositoUI(depId) {
+      if (!confirm('¿Seguro que desea ELIMINAR este depósito? Esta acción no se puede deshacer.')) return;
+      google.script.run.withSuccessHandler(res => {
+        if (res.ok) {
+          showMessage('msgDepositos', 'Depósito eliminado correctamente.', 'success');
+          listarDepositos();
+        } else {
+          showMessage('msgDepositos', 'Error: ' + (res.error || 'desconocido'), 'error');
+        }
+      }).withFailureHandler(err => showMessage('msgDepositos', 'Error de red: ' + err, 'error'))
+      .eliminarDeposito(depId);
+    }
+
+    /* ------------------- CARGO ESPECIAL ------------------- */
+
+    let ceClienteTimeout;
+
+    function abrirCargoEspecialModal() {
+      document.getElementById('ceClienteClave').value = '';
+      document.getElementById('ceMonto').value = '';
+      document.getElementById('ceConcepto').value = '';
+      document.getElementById('msgCargoEspecial').innerHTML = '';
+      document.getElementById('ceSaldoActual').style.display = 'none';
+      document.getElementById('ceHistorialSection').style.display = 'none';
+      document.getElementById('cargoEspecialModal').style.display = 'block';
+    }
+
+    function cerrarCargoEspecialModal() {
+      document.getElementById('cargoEspecialModal').style.display = 'none';
+    }
+
+    function onCeClienteChange() {
+      clearTimeout(ceClienteTimeout);
+      ceClienteTimeout = setTimeout(() => {
+        const clave = (document.getElementById('ceClienteClave').value || '').trim().toUpperCase();
+        if (clave.length >= 2) {
+          google.script.run.withSuccessHandler(saldo => {
+            const saldoDiv = document.getElementById('ceSaldoActual');
+            document.getElementById('ceSaldoActualMonto').textContent = '$' + (saldo || 0).toFixed(2);
+            saldoDiv.style.display = 'block';
+          }).obtenerSaldoFavorCliente(clave);
+
+          google.script.run.withSuccessHandler(cargos => {
+            const section = document.getElementById('ceHistorialSection');
+            const tabla = document.getElementById('ceHistorialTabla');
+            if (!cargos || cargos.length === 0) {
+              section.style.display = 'none';
+              return;
+            }
+            let rows = cargos.map(c => `<tr>
+              <td style="font-size:0.8em;color:#6c757d;">${c.ceId}</td>
+              <td>${c.fecha}</td>
+              <td style="font-weight:600;color:#17a2b8;">$${c.monto.toFixed(2)}</td>
+              <td>${c.concepto || '-'}</td>
+              <td>${c.estado === 'CANCELADO' ? '<span style="color:#dc3545;">✖ Cancelado</span>' : '<span style="color:#28a745;">✅ Activo</span>'}</td>
+              <td>${c.estado !== 'CANCELADO' ? `<button class="btn btn-secondary" style="padding:2px 6px;font-size:0.75rem" onclick="cancelarCeUI('${c.ceId}')">Cancelar</button>` : ''}</td>
+            </tr>`).join('');
+            tabla.innerHTML = `<table><thead><tr><th>ID</th><th>Fecha</th><th>Monto</th><th>Concepto</th><th>Estado</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+            section.style.display = 'block';
+          }).listarCargosEspeciales({ clienteClave: clave });
+        } else {
+          document.getElementById('ceSaldoActual').style.display = 'none';
+          document.getElementById('ceHistorialSection').style.display = 'none';
+        }
+      }, 400);
+    }
+
+    function guardarCargoEspecialUI(event) {
+      const btn = event.target;
+      const clienteClave = (document.getElementById('ceClienteClave').value || '').trim().toUpperCase();
+      const monto = parseFloat(document.getElementById('ceMonto').value);
+      const concepto = document.getElementById('ceConcepto').value.trim();
+
+      if (!clienteClave) { showMessage('msgCargoEspecial', 'Ingrese la clave del cliente.', 'warning'); return; }
+      if (!monto || monto <= 0) { showMessage('msgCargoEspecial', 'Ingrese un monto válido mayor a cero.', 'warning'); return; }
+
+      btn.disabled = true; btn.textContent = 'Guardando...';
+
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false; btn.textContent = '💾 Registrar Cargo Especial';
+        if (res.ok) {
+          showMessage('msgCargoEspecial', '✅ Cargo Especial registrado correctamente.', 'success');
+          document.getElementById('ceMonto').value = '';
+          document.getElementById('ceConcepto').value = '';
+          onCeClienteChange(); // Refresh balance & history
+        } else {
+          showMessage('msgCargoEspecial', 'Error: ' + (res.error || 'desconocido'), 'error');
+        }
+      }).withFailureHandler(err => {
+        btn.disabled = false; btn.textContent = '💾 Registrar Cargo Especial';
+        showMessage('msgCargoEspecial', 'Error de red: ' + err, 'error');
+      }).registrarCargoEspecial({ clienteClave, monto, concepto });
+    }
+
+    function cancelarCeUI(ceId) {
+      if (!confirm('¿Seguro que desea cancelar este Cargo Especial?')) return;
+      google.script.run.withSuccessHandler(res => {
+        if (res.ok) {
+          const clave = (document.getElementById('ceClienteClave').value || '').trim().toUpperCase();
+          showMessage('msgCargoEspecial', 'Cargo cancelado correctamente.', 'success');
+          onCeClienteChange();
+        } else {
+          showMessage('msgCargoEspecial', 'Error: ' + (res.error || 'desconocido'), 'error');
+        }
+      }).withFailureHandler(err => showMessage('msgCargoEspecial', 'Error: ' + err, 'error'))
+      .cancelarCargoEspecial(ceId);
     }
   </script>
