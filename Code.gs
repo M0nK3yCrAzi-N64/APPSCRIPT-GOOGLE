@@ -73,9 +73,14 @@ function esSalida(tipo) { return TIPOS_SALIDA.has(tipo); }
 
 /** WEB APP */
 function doGet() {
-  return HtmlService.createHtmlOutputFromFile("Index")
+  return HtmlService.createTemplateFromFile("Index")
+    .evaluate()
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .setTitle("Sistema de Control de Inventario");
+}
+
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
 /* ------------------- CLIENTES ------------------- */
